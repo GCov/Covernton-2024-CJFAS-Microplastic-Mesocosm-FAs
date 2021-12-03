@@ -137,6 +137,12 @@ simdata$se <- as.numeric(predict(mod3,simdata, se.fit = TRUE)$se.fit)
 simdata$upper <- with(simdata, mean + 1.96*se)
 simdata$lower <- with(simdata, mean - 1.96*se)
 
+png("Perch Diet Totals.png",
+    width = 25,
+    height= 12, 
+    units = "cm",
+    res = 600)
+
 ggplot() +
   geom_ribbon(data = simdata,
               aes(x = dose,
@@ -151,8 +157,13 @@ ggplot() +
   geom_point(data = perch_diet,
              aes(x = dose,
                  y = total.animals)) +
+  scale_y_continuous(expand = c(0.005,0.005),
+                     breaks = c(0, 1, 10, 1000)) +
+  coord_trans(y = "log1p") +
   labs(x = expression(paste("Dose (particles"~L^-1*")")),
-       y = "Number of  animals in stomach") +
+       y = "Total number of Individuals (log scale)") +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000, 30000)) +
   theme1
+
+dev.off()
