@@ -4,6 +4,9 @@ library(dplyr)
 library(glmmTMB)
 library(DHARMa)
 library(MuMIn)
+library(Hmsc)
+
+set.seed(632)
 
 theme1 <-
   theme_bw() +
@@ -167,3 +170,49 @@ ggplot() +
   theme1
 
 dev.off()
+
+## Try HMSC model
+
+perch_diet$std.dose <- as.numeric(scale(perch_diet$dose, center = TRUE))
+perch_diet$std.length <- as.numeric(scale(perch_diet$body.length, center = TRUE))
+
+XData <- perch_diet[,c(20:21)]  # pull out predictors
+
+Y <- perch_diet[,c(12:17)]  # pull out species counts
+
+# for now ignore the effect of corral
+
+model1 <- Hmsc(Y = Y,  # specify data
+               XData = XData, 
+               XFormula = ~std.dose + std.length)  # specify model structure
+
+run1 <- sampleMcmc(model1,
+                   thin = 1,
+                   samples = 5000,
+                   transient = 500,
+                   nChains = 3,
+                   verbose = 1000)
+
+## Check convergence
+
+post1 <- convertToCodaObject(run1)
+effectiveSize(post1$Beta)
+gelman.diag(post1$Beta, multivariate = FALSE)$psrf
+
+plot(post1$Beta)  # convergence looks good
+
+## Assess explanatory power
+
+pred1 <- computePredictedValues(run1)
+evaluateModelFit(hM = run1, predY = pred1)
+
+
+## Cross validation
+
+partition1 <- createPartition(run1, nfolds = 2)
+pred1.1 <- computePredictedValues(run1, partition = partition1)
+
+evaluateModelFit(hM = run1, predY = pred1.1)  # predictive power sucks
+
+postBeta1 <- getPostEstimate(run1, parName = "Beta")
+plotBeta(run1, post = postBeta1, param = "Support", supportLevel = 0.95)
