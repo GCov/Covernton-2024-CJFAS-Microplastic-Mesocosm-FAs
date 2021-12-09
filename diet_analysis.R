@@ -141,8 +141,8 @@ simdata$upper <- with(simdata, mean + 1.96*se)
 simdata$lower <- with(simdata, mean - 1.96*se)
 
 png("Perch Diet Totals.png",
-    width = 25,
-    height= 12, 
+    width = 17,
+    height= 10, 
     units = "cm",
     res = 600)
 
@@ -151,7 +151,7 @@ ggplot() +
               aes(x = dose,
                   ymin = lower,
                   ymax = upper),
-              fill = "blue",
+              fill = "lime green",
               alpha = 0.5) +
   geom_line(data = simdata,
             aes(x = dose,
@@ -160,14 +160,18 @@ ggplot() +
   geom_point(data = perch_diet,
              aes(x = dose,
                  y = total.animals)) +
-  scale_y_continuous(expand = c(0.005,0.005),
+  scale_y_continuous(expand = c(0.009,0.005),
                      breaks = c(0, 1, 10, 1000)) +
   coord_trans(y = "log1p") +
-  labs(x = expression(paste("Dose (particles"~L^-1*")")),
+  labs(x = expression(paste("Dose (particles"~L^-1*", log scale)")),
        y = "Total number of Individuals (log scale)") +
   scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000, 30000)) +
-  theme1
+                     breaks = c(0, 1, 10, 100, 1000, 10000, 30000),
+                     labels = c("0", "1", "10", "100", "1,000", "10,000", 
+                                "30,000"),
+                     expand = c(0.009, 0.005)) +
+  theme1 +
+  theme(plot.margin = margin(0.1, 0.7, 0.1, 0.1, unit = "cm"))
 
 dev.off()
 
