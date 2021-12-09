@@ -173,31 +173,41 @@ dev.off()
 
 ## Try HMSC model
 
-perch_diet$std.dose <- as.numeric(scale(perch_diet$dose, center = TRUE))
-perch_diet$std.length <- as.numeric(scale(perch_diet$body.length, center = TRUE))
+XData <- perch_diet[,c(3,5)]  # pull out predictors
 
-XData <- perch_diet[,c(20:21)]  # pull out predictors
+design <- data.frame(corral = factor(perch_diet[,2]))
+rlevels <- HmscRandomLevel(units = design$corral)
 
 Y <- perch_diet[,c(12:17)]  # pull out species counts
 
-# for now ignore the effect of corral
+## Specify model structure
 
-model1 <- Hmsc(Y = Y,  # specify data
-               XData = XData, 
-               XFormula = ~std.dose + std.length)  # specify model structure
+model1 <- Hmsc(Y = Y,  # response data
+               XData = XData,  # covariates
+               XFormula = ~dose + body.length,  # model formula
+               XScale = TRUE,  # scale covariates for fixed effects,
+               studyDesign = design,
+               ranLevels = list(corral = rlevels),
+               distr = "poisson")
+
+## Run MCMC chains
 
 run1 <- sampleMcmc(model1,
-                   thin = 1,
-                   samples = 5000,
+                   thin = 15,
+                   samples = 20000,
                    transient = 500,
                    nChains = 3,
+                   nParallel = 3,
                    verbose = 1000)
 
 ## Check convergence
 
 post1 <- convertToCodaObject(run1)
+
 effectiveSize(post1$Beta)
-gelman.diag(post1$Beta, multivariate = FALSE)$psrf
+gelman.diag(post1$Beta, 
+            transform = TRUE,
+            multivariate = FALSE)$psrf
 
 plot(post1$Beta)  # convergence looks good
 
