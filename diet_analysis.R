@@ -1,4 +1,4 @@
-#### Load libraries, data, etc.####
+# Load libraries, data, etc. ----
 
 library(ggplot2)
 library(tidyr)
@@ -17,12 +17,12 @@ set.seed(632)
 theme1 <-
   theme_bw() +
   theme(
-    panel.spacing = unit(1, "lines"), 
-    text = element_text(size = 12),
-    axis.text = element_text(size = 12),
+    panel.spacing = unit(1, "lines"),
+    text = element_text(size = 16),
+    axis.text = element_text(size = 16),
     strip.background = element_blank(),
-    strip.text = element_text(size = 12),
-    legend.text = element_text(size = 12),
+    strip.text = element_text(size = 16),
+    legend.text = element_text(size = 16),
     panel.grid = element_blank()
   )
 
@@ -37,14 +37,14 @@ extract.post <- function(x){
 }  # handy function for extracting posterior estimates of parameters
 
 
-## Load data
+## Load data ----
 
 perch_diet <- read.csv("perch_diet.csv", header = TRUE)
 
 perch_diet$dose <- as.numeric(perch_diet$dose)
 perch_diet$corral <- as.factor(perch_diet$corral)
 
-#### Plots ####
+# Count plots ----
 
 ## Plot totals
 
@@ -73,9 +73,9 @@ perch_diet_long$ID <- as.factor(perch_diet_long$ID)
 perch_diet_long$count <- as.numeric(perch_diet_long$count)
 
 levels(perch_diet_long$taxa) <-
-  c("Adult Insects",
-    "Amphipods",
-    "Larval Chironomids",
+  c("Amphipods",
+    "Chironomid Larvae",
+    "Chironomid Pupae",
     "Cladocerans",
     "Cyclopoid Copepods",
     "Larval Odonates")
@@ -86,11 +86,11 @@ perch_diet_long$treatment <-
 levels(perch_diet_long$treatment) <-
   c("0(B)", "414", "29,240", "100", "6", "7,071", "0(H)", "1,710")
 
-## Plot by taxa
+## Plot by taxa ----
 
 png("Perch Diet Plot by Taxa.png",
-    width = 25,
-    height= 12, 
+    width = 33,
+    height= 13, 
     units = "cm",
     res = 600)
 
@@ -106,7 +106,7 @@ ggplot(perch_diet_long) +
                     name = "Taxa",
                     palette = "Set1") +
   scale_y_continuous(expand = c(0.005,0.005),
-                     breaks = c(0, 1, 10, 1000)) +
+                     breaks = c(0, 1, 10, 100, 1000)) +
   coord_trans(y = "log1p") +
   facet_grid(.~reorder(treatment, dose, mean),
              scales = "free_x",
@@ -120,11 +120,79 @@ ggplot(perch_diet_long) +
 dev.off()
 
 
+## Plot by relative abundance ----
 
-#### GLMM for total individuals ####
+perch_relabund <- perch_diet
+perch_relabund[,c(12:17)] <- 
+  decostand(perch_relabund[,c(12:17)], 
+            method = "total")
 
+perch_relabund_long <- 
+  perch_relabund %>%
+  pivot_longer(names(perch_relabund[12:17]),
+               names_to = "taxa",
+               values_to = "count")
+
+perch_relabund_long$taxa <- as.factor(perch_relabund_long$taxa)
+perch_relabund_long$ID <- as.factor(perch_relabund_long$ID)
+perch_relabund_long$count <- as.numeric(perch_relabund_long$count)
+
+levels(perch_relabund_long$taxa) <-
+  c("Amphipods",
+    "Chironomid Larvae",
+    "Chironomid Pupae",
+    "Cladocerans",
+    "Cyclopoid Copepods",
+    "Larval Odonates")
+
+perch_relabund_long$treatment <-
+  as.factor(perch_relabund_long$corral)
+
+levels(perch_relabund_long$treatment) <-
+  c("0(B)", "414", "29,240", "100", "6", "7,071", "0(H)", "1,710")
+
+png("Perch Diet Plot by Taxa Relative Abundance.png",
+    width = 33,
+    height= 13, 
+    units = "cm",
+    res = 600)
+
+ggplot(perch_relabund_long) +
+  geom_col(aes(x = ID,
+               y = count,
+               fill = reorder(taxa, 1/(count+1), mean)),
+           colour = "black",
+           size = 0.25) +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x = expression(paste("Dose (MPs"~L^-1*")")),
+       y = "Proportion of Individuals") +
+  scale_fill_brewer(type = "qual",
+                    name = "Taxa",
+                    palette = "Set1") +
+  facet_grid(.~reorder(treatment, dose, mean),
+             scales = "free_x",
+             switch = "x",
+             space = "free_x") +
+  theme1 +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "bottom")
+
+dev.off()
+
+
+
+
+
+
+# GLMM for total individuals ----
+
+# Standarize predictors
 # Poisson
-mod1 <- glmmTMB(total.animals ~ log(dose + 1) + body.length +  (1 | corral),
+mod1 <- glmmTMB(total.animals ~ 
+                  scale(dose, center = TRUE) + 
+                  scale(body.length, center = TRUE) +  
+                          (1 | corral),
                 family = poisson(link = "log"),
                 data = perch_diet)  
 summary(mod1)
@@ -132,7 +200,10 @@ res1 <- simulateResiduals(mod1)
 plot(res1)
 
 # NB with linear variance
-mod2 <- glmmTMB(total.animals ~ log(dose + 1) + body.length +  (1 | corral),
+mod2 <- glmmTMB(total.animals ~ 
+                  scale(dose, center = TRUE) + 
+                  scale(body.length, center = TRUE) +  
+                  (1 | corral),
                 family = nbinom1(link = "log"),
                 data = perch_diet)
 summary(mod2)
@@ -140,7 +211,10 @@ res2 <- simulateResiduals(mod2)
 plot(res2)
 
 # NB with quadratic variance
-mod3 <- glmmTMB(total.animals ~ log(dose + 1) + body.length +  (1 | corral),
+mod3 <- glmmTMB(total.animals ~ 
+                  scale(dose, center = TRUE) + 
+                  scale(body.length, center = TRUE) +  
+                  (1 | corral),
                 family = nbinom2(link = "log"),
                 data = perch_diet)
 summary(mod3)
@@ -149,7 +223,23 @@ plot(res3)
 
 AICc(mod2, mod3)  # mod3 is the better fit
 
-## Plot model predictions
+# NB quadratic
+
+mod4 <- glmmTMB(total.animals ~ 
+                  scale(dose, center = TRUE) + 
+                  I(scale(dose, center = TRUE)^2) +
+                  scale(body.length, center = TRUE) +  
+                  (1 | corral),
+                family = nbinom2(link = "log"),
+                data = perch_diet)
+
+summary(mod4)
+res4 <- simulateResiduals(mod4)
+plot(res4)
+
+AICc(mod3, mod4)  # quadratic model not a better fit
+
+## Plot model predictions ----
 
 simdata <- data.frame(dose = seq(0, max(perch_diet$dose), length.out = 1000),
                       body.length = rep(mean(perch_diet$body.length), 1000),
@@ -163,42 +253,39 @@ simdata$upper <- with(simdata, mean + 1.96*se)
 simdata$lower <- with(simdata, mean - 1.96*se)
 
 png("Perch Diet Totals.png",
-    width = 17,
-    height= 10, 
+    width = 25,
+    height= 12, 
     units = "cm",
     res = 600)
 
 ggplot() +
   geom_ribbon(data = simdata,
               aes(x = dose,
-                  ymin = lower,
-                  ymax = upper),
+                  ymin = exp(lower),
+                  ymax = exp(upper)),
               fill = "lime green",
-              alpha = 0.5) +
+              alpha = 0.3) +
   geom_line(data = simdata,
             aes(x = dose,
-                y = mean),
+                y = exp(mean)),
             size = 0.5,
             linetype = "dashed") +
   geom_point(data = perch_diet,
              aes(x = dose,
                  y = total.animals)) +
   scale_y_continuous(expand = c(0.009,0.005),
-                     breaks = c(0, 1, 10, 1000)) +
+                     breaks = c(0, 1, 10, 100, 1000)) +
   coord_trans(y = "log1p") +
-  labs(x = expression(paste("Dose (particles"~L^-1*", log scale)")),
+  scale_x_continuous(expand = c(0.01, 0.01),
+                     breaks = seq(0, 29000, 3000)) +
+  labs(x = expression(paste("Dose (particles"~L^-1*")")),
        y = "Total number of Individuals (log scale)") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000, 30000),
-                     labels = c("0", "1", "10", "100", "1,000", "10,000", 
-                                "30,000"),
-                     expand = c(0.009, 0.005)) +
   theme1 +
   theme(plot.margin = margin(0.1, 0.7, 0.1, 0.1, unit = "cm"))
 
 dev.off()
 
-#### Check that total individuals is a good measure of gut fullness ####
+# Check that total individuals is a good measure of gut fullness ----
 
 gutmod1 <- lm(log(gi.weight) ~ log(total.animals + 1), data = perch_diet)
 
@@ -216,6 +303,15 @@ gutpred <- predict(gutmod1, se.fit = TRUE)
 gutpred$lower <- with(gutpred, fit - se.fit)
 gutpred$upper <- with(gutpred, fit + se.fit)
 
+
+## Plot model predictions ----
+
+png("Fullness Plot.png",
+    width = 17,
+    height= 13, 
+    units = "cm",
+    res = 600)
+
 ggplot(data = perch_diet) +
   geom_point(aes(x = total.animals,
                  y = gi.weight)) +
@@ -230,13 +326,19 @@ ggplot(data = perch_diet) +
             linetype = "dashed") +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000)) +
-  labs(x = "Total Animals",
+  labs(x = "Total Number of Individuals (log scale)",
        y = "Gastrointestinal Tract Weight (g)") +
   theme1
 
+dev.off()
 
 
-#### GLMM by taxa ####
+
+# GLMM by taxa ----
+
+## Poisson model ----
+
+### Fit model ----
 
 taxmod1 <- function() {
   # Likelihood
@@ -250,11 +352,11 @@ taxmod1 <- function() {
     
     gamma_ind[i] ~ dnorm(gamma_corral[corral[i]], tau_ind)
     
-    ## Fitted values
+    # Fitted values
     fitted[i] ~ dpois(lambda[i])
   }
   
-  ## Priors
+  # Priors
   
   for(j in 1:ntaxa) {
     alpha_taxa[j] ~ dnorm(0, 1)
@@ -274,7 +376,7 @@ taxmod1 <- function() {
   sigma_corral ~ dexp(1)
 }
 
-## Generate initial values for MCMC
+### Generate initial values for MCMC ----
 
 taxmod1init <- function()
 {
@@ -287,7 +389,7 @@ taxmod1init <- function()
   )
 }
 
-## Keep track of parameters
+### Keep track of parameters ----
 
 taxmod1param <- c("alpha_taxa",
                   "beta_dose",
@@ -295,7 +397,7 @@ taxmod1param <- c("alpha_taxa",
                   "sigma_ind",
                   "sigma_corral")
 
-## Specify data
+### Specify data ----
 
 taxmod1data <-
   list(
@@ -310,7 +412,7 @@ taxmod1data <-
     ncorral = length(unique(perch_diet_long$corral))
   )
 
-## Run the model
+### Run the model ----
 taxmod1run1 <- jags.parallel(
   data = taxmod1data,
   inits = taxmod1init,
@@ -329,7 +431,7 @@ taxmod1run1mcmc <- as.mcmc(taxmod1run1)
 xyplot(taxmod1run1mcmc, 
        layout = c(6, ceiling(nvar(taxmod1run1mcmc)/6)))  # trace plots
 
-#### Diagnostics ####
+### Diagnostics ----
 
 taxmod1param2 <- c("fitted", "lambda")
 
@@ -364,7 +466,9 @@ testZeroInflation(check.taxmod1)
 testDispersion(check.taxmod1)
 
 
-## Negative binomial model
+## Negative binomial model ----
+
+### Fit model ----
 
 taxmod2 <- function() {
   # Likelihood
@@ -383,7 +487,7 @@ taxmod2 <- function() {
     fitted[i] ~ dpois(lambda[i])
   }
   
-  ## Priors
+  # Priors
   
   r ~ dunif(0,50)
   
@@ -405,7 +509,7 @@ taxmod2 <- function() {
   sigma_corral ~ dexp(1)
 }
 
-## Generate initial values for MCMC
+### Generate initial values for MCMC ----
 
 taxmod2init <- function()
 {
@@ -419,7 +523,7 @@ taxmod2init <- function()
   )
 }
 
-## Keep track of parameters
+#### Keep track of parameters ----
 
 taxmod2param <- c("alpha_taxa",
                   "beta_dose",
@@ -427,7 +531,7 @@ taxmod2param <- c("alpha_taxa",
                   "sigma_ind",
                   "sigma_corral")
 
-## Specify data
+#### Specify data ----
 
 taxmod2data <-
   list(
@@ -442,7 +546,7 @@ taxmod2data <-
     ncorral = length(unique(perch_diet_long$corral))
   )
 
-## Run the model
+#### Run the model ----
 taxmod2run1 <- jags.parallel(
   data = taxmod2data,
   inits = taxmod2init,
@@ -461,7 +565,7 @@ taxmod2run1mcmc <- as.mcmc(taxmod2run1)
 xyplot(taxmod2run1mcmc, 
        layout = c(6, ceiling(nvar(taxmod2run1mcmc)/6)))  # trace plots
 
-#### Diagnostics ####
+#### Diagnostics ----
 
 taxmod2param2 <- c("fitted", "lambda")
 
@@ -495,7 +599,10 @@ plot(check.taxmod2)
 testZeroInflation(check.taxmod2)  ## zero-inflated
 
 
-## Zero-inflated Poisson
+## Zero-inflated Poisson ----
+
+### Fit model ----
+
 taxmod3 <- function() {
   # Likelihood
   for(i in 1:N) {
@@ -515,7 +622,7 @@ taxmod3 <- function() {
     fitted[i] ~ dpois(mu[i])
   }
   
-  ## Priors
+  # Priors
   
   alpha_p ~ dnorm(0, 0.2)
   
@@ -537,7 +644,7 @@ taxmod3 <- function() {
   sigma_corral ~ dexp(1)
 }
 
-## Generate initial values for MCMC
+### Generate initial values for MCMC ----
 
 taxmod3init <- function()
 {
@@ -551,7 +658,7 @@ taxmod3init <- function()
   )
 }
 
-## Keep track of parameters
+### Keep track of parameters ----
 
 taxmod3param <- c("alpha_p", "
                   alpha_taxa",
@@ -560,7 +667,7 @@ taxmod3param <- c("alpha_p", "
                   "sigma_ind",
                   "sigma_corral")
 
-## Specify data
+### Specify data ----
 
 taxmod3data <-
   list(
@@ -575,7 +682,7 @@ taxmod3data <-
     ncorral = length(unique(perch_diet_long$corral))
   )
 
-## Run the model
+### Run the model ----
 taxmod3run1 <- jags.parallel(
   data = taxmod3data,
   inits = taxmod3init,
@@ -594,7 +701,7 @@ taxmod3run1mcmc <- as.mcmc(taxmod3run1)
 xyplot(taxmod3run1mcmc, 
        layout = c(6, ceiling(nvar(taxmod3run1mcmc)/6)))  # trace plots
 
-#### Diagnostics ####
+### Diagnostics ----
 
 taxmod3param2 <- c("fitted", "mu")
 
@@ -629,7 +736,9 @@ plot(check.taxmod3)  ## also sucks
 
 
 
-#### Try HMSC model ####
+# Try HMSC model ----
+
+## Specify data ----
 
 XData <- perch_diet[,c(3,5)]  # pull out predictors
 
@@ -638,7 +747,7 @@ rlevels <- HmscRandomLevel(units = design$corral)
 
 Y <- perch_diet[,c(12:17)]  # pull out species counts
 
-## Specify model structure
+## Specify model structure ----
 
 model1 <- Hmsc(Y = Y,  # response data
                XData = XData,  # covariates
@@ -648,7 +757,7 @@ model1 <- Hmsc(Y = Y,  # response data
                ranLevels = list(corral = rlevels),
                distr = "poisson")
 
-## Run MCMC chains
+## Run MCMC chains ----
 
 run1 <- sampleMcmc(model1,
                    thin = 20,
@@ -659,7 +768,7 @@ run1 <- sampleMcmc(model1,
                    verbose = 1000)
 beep(8)
 
-## Check convergence
+## Check convergence ----
 
 post1 <- convertToCodaObject(run1)
 
@@ -671,26 +780,26 @@ gelman.diag(post1$Beta,
 plot(post1$Beta)
 
 
-## Assess explanatory power
+## Assess explanatory power ----
 
 pred1 <- computePredictedValues(run1)
 evaluateModelFit(hM = run1, predY = pred1)
 
 
-## Cross validation
+## Cross validation ----
 
 partition1 <- createPartition(run1, nfolds = 2)
 pred1.1 <- computePredictedValues(run1, partition = partition1)
 
 evaluateModelFit(hM = run1, predY = pred1.1)  # predictive power sucks
 
-## Look at slope estimates
-
+## Look at slope estimates ----
+ 
 postBeta <- getPostEstimate(run1, parName = "Beta")
 plotBeta(run1, post = postBeta, param = "Support", supportLevel = 0.95)
 
 
-#### Look at effect of body size ####
+# Look at effect of body size ----
 
 ggplot(perch_diet_long) +
   geom_point(aes(x = body.length,
@@ -709,10 +818,7 @@ ggplot(perch_diet_long) +
 
 
 
-
-
-
-#### nMDS ####
+# nMDS ----
 
 # Remove rows with all zeros
 sum <- numeric()
@@ -745,26 +851,54 @@ data.scores <- as.data.frame(scores(nMDS1))
 data.scores$dose <- XData2$dose
 data.scores$body.length <- XData2$body.length
 
+## Generate hulls ----
+
+data.scores$dose <- as.factor(data.scores$dose)
+
+hulls <- data.frame()
+
+for(i in 1:length(unique(data.scores$dose))) {
+  hull <- 
+    data.scores[data.scores$dose ==
+                  unique(data.scores$dose)[i],
+                ][chull(data.scores[data.scores$dose ==
+                                      unique(data.scores$dose)[i],
+                                    c(1:2)]), ]
+  hulls <- rbind(hulls, hull)
+}
+
+## Plot ----
+
 png("Perch nMDS.png",
-    width = 19,
-    height= 13, 
+    width = 20,
+    height= 18, 
     units = "cm",
     res = 600)
 
-ggplot(data.scores) +
-  geom_point(aes(x = NMDS1,
+ggplot() +
+  geom_polygon(data = hulls,
+               aes(x = NMDS1,
+                   y = NMDS2,
+                   fill = dose,
+                   colour = dose),
+               alpha = 0.3,
+               size = 0.5) +
+  geom_label(data = data.scores,
+             aes(x = NMDS1,
                  y = NMDS2,
-                 fill = log(dose+1),
+                 label = dose,
+                 fill = dose,
                  size = body.length),
-             shape = 21,
-             position = position_jitter(width = 0.04),
-             alpha = 0.8) +
+             alpha = 0.3) +
   scale_size(name = "Total Length (cm)") +
-  scale_fill_gradient(low = "blue",
-                      high = "aquamarine",
-                      name = expression(paste("log(Dose + 1) (MPs"~L^-1*")")),
-                      breaks = c(1, 5, 10)) +
+  scale_fill_brewer(type = "seq",
+                    palette = "YlOrRd",
+                    name = expression(paste("Dose (MPs"~L^-1*")"))) +
+  scale_colour_brewer(type = "seq",
+                      palette = "YlOrRd",
+                      name = expression(paste("Dose (MPs"~L^-1*")"))) +
   theme1
 
 dev.off()
+
 

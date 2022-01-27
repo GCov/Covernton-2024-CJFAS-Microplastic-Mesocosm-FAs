@@ -1,4 +1,4 @@
-ID,corral,dose,collection.date,body.length,body.weight,gi.weight,fillet.weight,liver.weight,gills.weight,notes,adult insecta,amphipoda,chironomid,cladocera,cyclopoida,odonata,total.animals,diet.notes
+ID,corral,dose,collection.date,body.length,body.weight,gi.weight,fillet.weight,liver.weight,gills.weight,notes,chironomid.pupa,amphipoda,chironomid.larva,cladocera,cyclopoida,odonata,total.animals,diet.notes
 B-4,B,0,15-08-2021,10.9,11.6,0.355,1.919,0.029,0.255,this fish had respirometry!!!,0,0,0,0,0,0,0,"stomach appears to be empty, maybe algae?"
 C-10,C,414,22-08-2021,10.2,9.6,0.342,1.287,0.067,0.092,,0,0,5,63,7,0,75,seems to be mostly daphniids
 C-11,C,414,22-08-2021,10.6,11.8,0.475,2.907,0.067,0.092,,0,1,6,19,1,0,27,seems to be mostly daphniids
