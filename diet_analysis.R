@@ -41,7 +41,7 @@ extract.post <- function(x){
 
 perch_diet <- read.csv("perch_diet.csv", header = TRUE)
 
-perch_diet$dose <- as.numeric(perch_diet$dose)
+perch_diet$MPconcentration <- as.numeric(perch_diet$MPconcentration)
 perch_diet$corral <- as.factor(perch_diet$corral)
 
 # Count plots ----
