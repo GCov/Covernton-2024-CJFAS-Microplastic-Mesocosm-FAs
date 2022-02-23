@@ -5,6 +5,7 @@ library(glmmTMB)
 library(DHARMa)
 library(dplyr)
 library(MuMIn)
+library(tidyr)
 
 # Load data ----
 
@@ -56,7 +57,8 @@ perch_FA2 <- left_join(perch_FA, perch_biometrics,
 
 # Convert date to a centered numeric value
 
-perch_FA2$date2 <- scale(as.numeric(perch_FA2$date), center = TRUE)
+perch_FA2$date2 <- 
+  as.numeric(scale(as.numeric(perch_FA2$date), center = TRUE))
 
 perchFAmod1 <- glmmTMB(total_FAs ~ 
                          scale(MPconcentration, center = TRUE) +
@@ -280,6 +282,12 @@ dev.off()
 
 ## Zooplankton ----
 
+png("Zooplankton EPA and DHA Plot.png",
+    width = 19,
+    height= 8, 
+    units = "cm",
+    res = 600)
+
 ggplot(zoop_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_20.5n.3,
@@ -304,6 +312,8 @@ ggplot(zoop_FA) +
   facet_grid(~date) +
   theme1
 
+dev.off()
+
 ## Fish food ----
 
 ggplot(food_FA) +
@@ -320,3 +330,27 @@ ggplot(food_FA) +
   theme1 +
   theme(axis.text.x = element_blank())
 
+# Generate plots for different fatty acid groups ----
+
+## Perch ----
+
+perch_FA_majgroups <- 
+  perch_FA2[,c(1:6, 17, 26, 35, 45:49, 51:60)]
+
+# Put into long form
+
+perch_FA_majgroups_long <- 
+  perch_FA_majgroups %>%
+  pivot_longer(names(perch_FA_majgroups)[7:14],
+               names_to = "metric",
+               values_to = "value")
+
+ggplot(perch_FA_majgroups_long) +
+  geom_point(aes(x = MPconcentration,
+                 y = value)) +
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
+       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
+  facet_wrap(~metric) +
+  theme1
