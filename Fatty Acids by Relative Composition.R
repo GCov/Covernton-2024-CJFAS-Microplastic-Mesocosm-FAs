@@ -159,6 +159,12 @@ for(i in 1:length(unique(zoop_FA_data.scores2$MPconcentration))) {
 
 ## Plot ----
 
+png("Zooplankton MDS Plot.png",
+    width = 19,
+    height= 15, 
+    units = "cm",
+    res = 600)
+
 ggplot() +
   geom_polygon(data = zoop_FA_hulls,
                aes(x = NMDS1,
@@ -175,11 +181,15 @@ ggplot() +
              aes(x = NMDS1,
                  y = NMDS2,
                  label = ID),
-             alpha = 0.3) +
+             alpha = 0.3,
+             size = 4) +
   geom_text(data = zoop_FA_variable_scores,
-            aes(x = MDS1, y = MDS2, label = variable),
+            aes(x = MDS1, 
+                y = MDS2, 
+                label = variable,
+                angle = MDS1*MDS2*0.6),
             alpha = 0.9,
-            size = 5,
+            size = 3,
             colour = "purple") +
   scale_fill_brewer(type = "seq",
                     palette = "YlGnBu",
@@ -190,6 +200,8 @@ ggplot() +
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   theme1
+
+dev.off()
 
 # PCA
 
@@ -275,6 +287,12 @@ for(i in 1:length(unique(perch_FA_data.scores2$MPconcentration))) {
 
 ## Plot ----
 
+png("Perch MDS Plot.png",
+    width = 19,
+    height= 15, 
+    units = "cm",
+    res = 600)
+
 ggplot() +
   geom_polygon(data = perch_FA_hulls,
                aes(x = NMDS1,
@@ -291,11 +309,15 @@ ggplot() +
              aes(x = NMDS1,
                  y = NMDS2,
                  label = ID),
+             size = 4,
              alpha = 0.3) +
   geom_text(data = perch_FA_variable_scores,
-            aes(x = MDS1, y = MDS2, label = variable),
+            aes(x = MDS1, 
+                y = MDS2, 
+                label = variable,
+                angle = MDS1*MDS2*1.5),
             alpha = 0.9,
-            size = 5,
+            size = 3,
             colour = "purple") +
   scale_fill_brewer(type = "seq",
                     palette = "YlGnBu",
@@ -306,6 +328,8 @@ ggplot() +
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   theme1
+
+dev.off()
 
 perch_FA_pca <- prcomp(perch_FA_percent_matrix, 
                       center = TRUE,

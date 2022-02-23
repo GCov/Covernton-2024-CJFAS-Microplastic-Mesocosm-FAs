@@ -77,6 +77,12 @@ perch_tot_FA_predict$upper <- with(perch_tot_FA_predict,
 perch_tot_FA_predict$lower <- with(perch_tot_FA_predict,
                                    fit - 1.98 * se.fit)
 
+png("Perch Total FA Plot.png",
+    width = 12,
+    height= 8, 
+    units = "cm",
+    res = 600)
+
 ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = total_FAs,
@@ -94,9 +100,12 @@ ggplot(perch_FA) +
        y = expression(paste("Total fatty acids (mg "~g^-1*")"))) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  scale_colour_brewer(palette = "Set1",
-                      name = "Corral") +
+  scale_fill_brewer(type = "qual",
+                    palette = 1,
+                    name = "Corral") +
   theme1
+
+dev.off()
 
 ## Zooplankton ----
 
@@ -134,6 +143,12 @@ zoop_tot_FA_predict$upper <- with(zoop_tot_FA_predict,
 zoop_tot_FA_predict$lower <- with(zoop_tot_FA_predict,
                                    fit - 1.98 * se.fit)
 
+png("Zooplankton Total FA Plot.png",
+    width = 19,
+    height= 8, 
+    units = "cm",
+    res = 600)
+
 ggplot(zoop_FA) +
   geom_point(aes(x = MPconcentration,
                  y = total_FAs,
@@ -151,10 +166,13 @@ ggplot(zoop_FA) +
        y = expression(paste("Total fatty acids (mg "~g^-1*")"))) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  scale_colour_brewer(palette = "Set1",
-                      name = "Corral") +
+  scale_fill_brewer(type = "qual",
+                    palette = 1,
+                    name = "Corral") +
   facet_wrap(~date) +
   theme1
+
+dev.off()
 
 # Analysis and plots according to DHA vs. EPA -----
 
@@ -170,6 +188,22 @@ plotResiduals(simulateResiduals(perchEPAmod1))
 
 summary(perchEPAmod1)
 
+perchEPA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(perch_FA2)),
+                           date2 = rep(0,
+                                       times = nrow(perch_FA2)),
+                           corral = rep(NA,
+                                        times = nrow(perch_FA2))) 
+
+perchEPA_pred <- predict(perchEPAmod1,
+                         newdata = perchEPA_sim,
+                         se.fit = TRUE)
+
+perchEPA_sim$pred <- perchEPA_pred$fit
+perchEPA_sim$upper <- perchEPA_pred$fit + 1.96*perchEPA_pred$se.fit
+perchEPA_sim$lower <- perchEPA_pred$fit - 1.96*perchEPA_pred$se.fit
+
 perchDHAmod1 <- glmmTMB(C_22.6n.3 ~ 
                           log(MPconcentration + 1) + 
                           date2 +
@@ -180,29 +214,69 @@ plotResiduals(simulateResiduals(perchDHAmod1))
 
 summary(perchDHAmod1)
 
+perchDHA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(perch_FA2)),
+                           date2 = rep(0,
+                                       times = nrow(perch_FA2)),
+                           corral = rep(NA,
+                                        times = nrow(perch_FA2))) 
+
+perchDHA_pred <- predict(perchDHAmod1,
+                         newdata = perchDHA_sim,
+                         se.fit = TRUE)
+
+perchDHA_sim$pred <- perchDHA_pred$fit
+perchDHA_sim$upper <- perchDHA_pred$fit + 1.96*perchDHA_pred$se.fit
+perchDHA_sim$lower <- perchDHA_pred$fit - 1.96*perchDHA_pred$se.fit
+
 colours <- c("DHA" = "green",
              "EPA" = "blue")
 
+png("Perch EPA and DHA Plot.png",
+    width = 12,
+    height= 8, 
+    units = "cm",
+    res = 600)
+
 ggplot(perch_FA) +
+  geom_ribbon(data = perchEPA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "EPA"),
+              alpha = 0.3) +
+  geom_line(data = perchEPA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "EPA")) +
   geom_point(aes(x = MPconcentration,
                  y = C_20.5n.3,
                  colour = "EPA")) +
-  geom_line(aes(x = MPconcentration,
-                y = predict(perchEPAmod1),
-                colour = "EPA")) +
+  geom_ribbon(data = perchDHA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "DHA"),
+              alpha = 0.3) +     
+  geom_line(data = perchDHA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "DHA")) +
   geom_point(aes(x = MPconcentration,
                  y = C_22.6n.3,
                  colour = "DHA")) +
-  geom_line(aes(x = MPconcentration,
-                y = predict(perchDHAmod1),
-                colour = "DHA")) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
   scale_colour_manual(values = colours,
                       name = "") +
+  scale_fill_manual(values = colours,
+                    name = "") +
   theme1
+
+dev.off()
 
 ## Zooplankton ----
 
