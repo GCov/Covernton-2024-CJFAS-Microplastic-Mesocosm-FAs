@@ -316,6 +316,12 @@ dev.off()
 
 ## Fish food ----
 
+png("Fish Food EPA and DHA Plot.png",
+    width = 9,
+    height= 6, 
+    units = "cm",
+    res = 600)
+
 ggplot(food_FA) +
   geom_boxplot(aes(x = 1,
                    y = C_20.5n.3,
@@ -328,7 +334,10 @@ ggplot(food_FA) +
   scale_fill_manual(values = colours,
                       name = "") +
   theme1 +
-  theme(axis.text.x = element_blank())
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+dev.off()
 
 # Generate plots for different fatty acid groups ----
 
