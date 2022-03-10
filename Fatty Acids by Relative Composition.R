@@ -3,6 +3,7 @@
 library(ggplot2)
 library(glmmTMB)
 library(DHARMa)
+library(plyr)
 library(dplyr)
 library(MuMIn)
 library(vegan)
@@ -22,16 +23,15 @@ FAs_percent <- left_join(FAs_percent,
                  treatments,
                  by = "corral")
 
+# Assign corral A MP concentration of 24 for zoop_FA
+
+FAs_percent$MPconcentration[is.na(FAs_percent$MPconcentration)] <- 24
+
 # Separate out by sample type ----
 
 perch_FA_percent <- subset(FAs_percent, sample.type == "perch")
 zoop_FA_percent <- subset(FAs_percent, sample.type == "zooplankton")
 food_FA_percent <- subset(FAs_percent, sample.type == "fish food")
-
-# Assign corral a MP concentration of 0 for zoop_FA
-
-zoop_FA_percent$MPconcentration[zoop_FA_percent$corral == "A"] <- 
-  24
 
 # Add in perch biometrics data ----
 
@@ -343,3 +343,76 @@ ggbiplot(perch_FA_pca,
          labels = perch_FA_covariates$ID,
          ellipse = TRUE,
          groups = as.factor(perch_FA_covariates$MPconcentration))
+
+
+# Essential fatty acids comparison ----
+
+## Put data into long form ----
+
+FA_percent_long <- 
+  FAs_percent[,c(1:3,5,6,17,20,23,26,27,31,35,36,40,42,45:47,51)] %>%
+  pivot_longer(names(FAs_percent[c(17,20,23,26,27,31,35,36,40,42,45:47)]),
+               names_to = "metric",
+               values_to = "value")
+
+FA_percent_long$metric <- as.factor(FA_percent_long$metric)
+
+FA_percent_long$sample.type <- 
+  mapvalues(FA_percent_long$sample.type,
+            from = levels(FA_percent_long$sample.type),
+            to = c("Mysis Fish Food",
+                   "Yellow Perch",
+                   "Zooplankton"))
+
+# Focus on endpoint Zooplankton
+FA_percent_long <- subset(FA_percent_long,
+                          date >= "2021-08-01" |
+                            sample.type == "Mysis Fish Food")
+
+# Set MP concentration to 0 for fish food
+
+FA_percent_long$MPconcentration[FA_percent_long$sample.type == 
+                                  "Mysis Fish Food"] <- 0
+
+# Define labeller
+
+percent_labels <- as_labeller(c("C_16.1n.7" = "Palmitoleic acid",
+                                "C_18.1n.9" = "Oleic acid",
+                                "C_18.2n.6" = "Linoleic acid",
+                                "C_18.3n.3" = "Alpha-linoleic acid",
+                                "C_20.4n.6" = "Arachidonic acid",
+                                "C_20.5n.3" = "Eicosapentaenoic acid",
+                                "C_22.6n.3" = "Docosahexaenoic acid",
+                                "HUFAs" = "Total HUFAs",
+                                "PUFAs" = "Total PUFAs",
+                                "total_MUFAs" = "Total MUFAs",
+                                "total_N.3_PUFAs" = "Total n-3 PUFAs",
+                                "total_N.6_PUFAs" = "Total n-6 PUFAs",
+                                "total_SFAs" = "Total SFAs"))
+
+## Plot ----
+
+png("Sample Comparison FA Plot.png",
+    width = 19,
+    height= 19, 
+    units = "cm",
+    res = 600)
+
+ggplot(FA_percent_long) +
+  geom_point(aes(x = MPconcentration,
+                 y = value,
+                 colour = sample.type)) +
+  geom_smooth(aes(x = MPconcentration,
+                  y = value,
+                  colour = sample.type),
+              method = "lm") +
+  facet_wrap(~metric, scales = "free_y", labeller = percent_labels, ncol = 3) +
+  labs(x = "Sample Type",
+       y = "Percent of Total Fatty Acids") +
+  scale_colour_manual(values = c("orange", "purple", "blue"),
+                      name = "") +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
+  theme1
+
+dev.off()

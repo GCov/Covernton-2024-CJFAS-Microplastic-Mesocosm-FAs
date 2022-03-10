@@ -49,7 +49,7 @@ perch_diet$corral <- as.factor(perch_diet$corral)
 ## Plot totals
 
 ggplot(data = perch_diet,
-       aes(x = dose,
+       aes(x = MPconcentration,
            y = total.animals)) +
   geom_point() +
   labs(x = expression(paste("Dose (particles"~L^-1*")")),
@@ -190,7 +190,7 @@ dev.off()
 # Standarize predictors
 # Poisson
 mod1 <- glmmTMB(total.animals ~ 
-                  scale(dose, center = TRUE) + 
+                  scale(MPconcentration, center = TRUE) + 
                   scale(body.length, center = TRUE) +  
                           (1 | corral),
                 family = poisson(link = "log"),
@@ -201,7 +201,7 @@ plot(res1)
 
 # NB with linear variance
 mod2 <- glmmTMB(total.animals ~ 
-                  scale(dose, center = TRUE) + 
+                  scale(MPconcentration, center = TRUE) + 
                   scale(body.length, center = TRUE) +  
                   (1 | corral),
                 family = nbinom1(link = "log"),
@@ -212,7 +212,7 @@ plot(res2)
 
 # NB with quadratic variance
 mod3 <- glmmTMB(total.animals ~ 
-                  scale(dose, center = TRUE) + 
+                  scale(MPconcentration, center = TRUE) + 
                   scale(body.length, center = TRUE) +  
                   (1 | corral),
                 family = nbinom2(link = "log"),
@@ -226,8 +226,8 @@ AICc(mod2, mod3)  # mod3 is the better fit
 # NB quadratic
 
 mod4 <- glmmTMB(total.animals ~ 
-                  scale(dose, center = TRUE) + 
-                  I(scale(dose, center = TRUE)^2) +
+                  scale(MPconcentration, center = TRUE) + 
+                  I(scale(MPconcentration, center = TRUE)^2) +
                   scale(body.length, center = TRUE) +  
                   (1 | corral),
                 family = nbinom2(link = "log"),
@@ -241,7 +241,8 @@ AICc(mod3, mod4)  # quadratic model not a better fit
 
 ## Plot model predictions ----
 
-simdata <- data.frame(dose = seq(0, max(perch_diet$dose), length.out = 1000),
+simdata <- data.frame(MPconcentration = seq(0, max(perch_diet$MPconcentration), 
+                                            length.out = 1000),
                       body.length = rep(mean(perch_diet$body.length), 1000),
                       corral = rep(NA, 1000))
 
@@ -253,32 +254,33 @@ simdata$upper <- with(simdata, mean + 1.96*se)
 simdata$lower <- with(simdata, mean - 1.96*se)
 
 png("Perch Diet Totals.png",
-    width = 25,
-    height= 12, 
+    width = 9,
+    height= 7, 
     units = "cm",
     res = 600)
 
 ggplot() +
   geom_ribbon(data = simdata,
-              aes(x = dose,
+              aes(x = MPconcentration,
                   ymin = exp(lower),
                   ymax = exp(upper)),
               fill = "lime green",
               alpha = 0.3) +
   geom_line(data = simdata,
-            aes(x = dose,
+            aes(x = MPconcentration,
                 y = exp(mean)),
             size = 0.5,
             linetype = "dashed") +
   geom_point(data = perch_diet,
-             aes(x = dose,
+             aes(x = MPconcentration,
                  y = total.animals)) +
   scale_y_continuous(expand = c(0.009,0.005),
                      breaks = c(0, 1, 10, 100, 1000)) +
   coord_trans(y = "log1p") +
-  scale_x_continuous(expand = c(0.01, 0.01),
-                     breaks = seq(0, 29000, 3000)) +
-  labs(x = expression(paste("Dose (particles"~L^-1*")")),
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000),
+                     expand = c(0.01, 0.01)) +
+  labs(x = expression(paste("MP Exposure Concentration (particles"~L^-1*")")),
        y = "Total number of Individuals (log scale)") +
   theme1 +
   theme(plot.margin = margin(0.1, 0.7, 0.1, 0.1, unit = "cm"))

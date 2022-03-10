@@ -26,15 +26,15 @@ FAs <- left_join(FAs,
                  treatments,
                  by = "corral")
 
+# Assign corral A MP concentration of 24 for zoop_FA
+
+FAs$MPconcentration[is.na(FAs$MPconcentration)] <- 24
+
 # Separate out by sample type ----
 
 perch_FA <- subset(FAs, sample.type == "perch")
 zoop_FA <- subset(FAs, sample.type == "zooplankton")
 food_FA <- subset(FAs, sample.type == "fish food")
-
-# Assign corral a MP concentration of 0 for zoop_FA
-
-zoop_FA[zoop_FA$corral == "A",]$MPconcentration <- 24
 
 # Add in perch biometrics data ----
 
@@ -79,6 +79,9 @@ perch_tot_FA_predict$upper <- with(perch_tot_FA_predict,
 perch_tot_FA_predict$lower <- with(perch_tot_FA_predict,
                                    fit - 1.98 * se.fit)
 
+
+### Plot ----
+
 png("Perch Total FA Plot.png",
     width = 12,
     height= 8, 
@@ -98,7 +101,7 @@ ggplot(perch_FA) +
   geom_line(aes(x = MPconcentration,
                 y = perch_tot_FA_predict$fit),
             size = 2) +
-  labs(x = expression(paste("MP exposure cocentration (particles"~L^-1*")")),
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Total fatty acids (mg "~g^-1*")"))) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
@@ -315,7 +318,7 @@ dev.off()
 
 ## n-3/n-6, DHA/ARA, OA/PA ----
 
-# Put data into long form
+### Put data into long form ----
 
 perch_FA2$n3.n6 <- with(perch_FA2, total_N.3_PUFA / total_N.6_PUFA)
 perch_FA2$DHA.ARA <- with(perch_FA2, C_22.6n.3 / C_20.4n.6)
@@ -329,11 +332,48 @@ perch_FA_long <-
                names_to = "metric",
                values_to = "value")
 
+perch_FA_long$metric <- as.factor(perch_FA_long$metric)
+
+### DHA/ARA ----
+
+perchDHA.ARAmod1 <- glmmTMB(value ~ 
+                          log(MPconcentration + 1) + date2 + (1 | corral),
+                          data = subset(perch_FA_long, metric == "DHA.ARA"))
+
+plotResiduals(simulateResiduals(perchDHA.ARAmod1))
+
+summary(perchDHA.ARAmod1)  # weak effect
+
+perchDHA.ARA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(perch_FA2)),
+                           date2 = rep(0,
+                                       times = nrow(perch_FA2)),
+                           corral = rep(NA,
+                                        times = nrow(perch_FA2))) 
+
+perchDHA.ARA_pred <- predict(perchDHA.ARAmod1,
+                         newdata = perchDHA.ARA_sim,
+                         se.fit = TRUE)
+
+perch_FA_long$pred <- rep(NA, times = nrow(perch_FA_long))
+perch_FA_long$upper <- rep(NA, times = nrow(perch_FA_long))
+perch_FA_long$lower <- rep(NA, times = nrow(perch_FA_long))
+
+perch_FA_long$pred[perch_FA_long$metric == "DHA.ARA"] <- 
+  perchDHA.ARA_pred$fit
+
+perch_FA_long$upper[perch_FA_long$metric == "DHA.ARA"] <- 
+  perchDHA.ARA_pred$fit + 1.96*perchDHA.ARA_pred$se.fit
+
+perch_FA_long$lower[perch_FA_long$metric == "DHA.ARA"] <- 
+  perchDHA.ARA_pred$fit - 1.96*perchDHA.ARA_pred$se.fit
+
 ### Plot ----
 
 png("Perch FA Ratios Plot.png",
     width = 19,
-    height= 8, 
+    height= 15, 
     units = "cm",
     res = 600)
 
@@ -347,25 +387,29 @@ ggplot(perch_FA_long) +
   facet_wrap(~metric,
              labeller = as_labeller(c("DHA.ARA" = "DHA:ARA",
                                       "n3.n6" = "n-3:n-6",
-                                      "OA.PA" = "Oleic acid:Palmitoleic acid"))) +
+                                      "OA.PA" = 
+                                        "Oleic acid:Palmitoleic acid")),
+             ncol = 2) +
   theme1
 
 dev.off()
 
 
-
-
-
-
-
 # Zooplankton Analysis----
+
+# Convert date to a centered numeric value
+
+zoop_FA$date2 <- 
+  as.numeric(scale(as.numeric(zoop_FA$date), center = TRUE))
 
 # Convert date to a factor
 
 zoop_FA$date2 <- as.factor(zoop_FA$date)
 
+## Total FAs----
+
 zoopFAmod1 <- glmmTMB(total_FAs ~
-                        MPconcentration*date2 +
+                        log(MPconcentration+1)*date2 +
                         (1 | corral),
                       data = zoop_FA)
 
@@ -394,6 +438,8 @@ zoop_tot_FA_predict$upper <- with(zoop_tot_FA_predict,
 zoop_tot_FA_predict$lower <- with(zoop_tot_FA_predict,
                                    fit - 1.98 * se.fit)
 
+### Plot ----
+
 png("Zooplankton Total FA Plot.png",
     width = 19,
     height= 8, 
@@ -412,7 +458,7 @@ ggplot(zoop_FA) +
               alpha = 0.3) +
   geom_line(aes(x = MPconcentration,
                 y = zoop_tot_FA_predict$fit),
-            size = 2) +
+            size = 1) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Total fatty acids (mg "~g^-1*")"))) +
   scale_x_continuous(trans = "log1p",
@@ -427,28 +473,260 @@ dev.off()
 
 
 
-## Zooplankton ----
+## ARA, EPA, DHA, total HUFAs ----
 
-png("Zooplankton EPA and DHA Plot.png",
-    width = 19,
+### ARA ----
+
+zoopARAmod1 <- glmmTMB(C_20.4n.6 ~ 
+                          log(MPconcentration + 1)*date2 +
+                          (1 | corral),
+                        data = zoop_FA)
+
+plotResiduals(simulateResiduals(zoopARAmod1))
+
+summary(zoopARAmod1)  # no effect
+
+zoopARA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(zoop_FA)),
+                           date2 = rep(0,
+                                       times = nrow(zoop_FA)),
+                           corral = rep(NA,
+                                        times = nrow(zoop_FA))) 
+
+zoopARA_pred <- predict(zoopARAmod1,
+                         newdata = zoopARA_sim,
+                         se.fit = TRUE)
+
+zoopARA_sim$pred <- zoopARA_pred$fit
+zoopARA_sim$upper <- zoopARA_pred$fit + 1.96*zoopARA_pred$se.fit
+zoopARA_sim$lower <- zoopARA_pred$fit - 1.96*zoopARA_pred$se.fit
+
+### EPA ----
+
+zoopEPAmod1 <- glmmTMB(C_20.5n.3 ~ 
+                          log(MPconcentration + 1) +
+                          date2 +
+                          (1 | corral),
+                        data = zoop_FA)
+
+plotResiduals(simulateResiduals(zoopEPAmod1))
+
+summary(zoopEPAmod1)  # no effect
+
+zoopEPA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(zoop_FA)),
+                           date2 = rep(0,
+                                       times = nrow(zoop_FA)),
+                           corral = rep(NA,
+                                        times = nrow(zoop_FA))) 
+
+zoopEPA_pred <- predict(zoopEPAmod1,
+                         newdata = zoopEPA_sim,
+                         se.fit = TRUE)
+
+zoopEPA_sim$pred <- zoopEPA_pred$fit
+zoopEPA_sim$upper <- zoopEPA_pred$fit + 1.96*zoopEPA_pred$se.fit
+zoopEPA_sim$lower <- zoopEPA_pred$fit - 1.96*zoopEPA_pred$se.fit
+
+### DHA ----
+
+zoopDHAmod1 <- glmmTMB(C_22.6n.3 ~ 
+                          log(MPconcentration + 1) + 
+                          date2 +
+                          (1 | corral),
+                        data = zoop_FA)
+
+plotResiduals(simulateResiduals(zoopDHAmod1))
+
+summary(zoopDHAmod1)  # strong effect
+
+zoopDHA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(zoop_FA)),
+                           date2 = rep(0,
+                                       times = nrow(zoop_FA)),
+                           corral = rep(NA,
+                                        times = nrow(zoop_FA))) 
+
+zoopDHA_pred <- predict(zoopDHAmod1,
+                         newdata = zoopDHA_sim,
+                         se.fit = TRUE)
+
+zoopDHA_sim$pred <- zoopDHA_pred$fit
+zoopDHA_sim$upper <- zoopDHA_pred$fit + 1.96*zoopDHA_pred$se.fit
+zoopDHA_sim$lower <- zoopDHA_pred$fit - 1.96*zoopDHA_pred$se.fit
+
+### HUFA ----
+
+zoopHUFAmod1 <- glmmTMB(HUFAs ~ 
+                           log(MPconcentration + 1) + 
+                           date2 +
+                           (1 | corral),
+                         data = zoop_FA)
+
+plotResiduals(simulateResiduals(zoopHUFAmod1))
+
+summary(zoopHUFAmod1)  # slight effect
+
+zoopHUFA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                  to = 29240,
+                                                  length.out = nrow(zoop_FA)),
+                            date2 = rep(0,
+                                        times = nrow(zoop_FA)),
+                            corral = rep(NA,
+                                         times = nrow(zoop_FA))) 
+
+zoopHUFA_pred <- predict(zoopHUFAmod1,
+                          newdata = zoopHUFA_sim,
+                          se.fit = TRUE)
+
+zoopHUFA_sim$pred <- zoopHUFA_pred$fit
+zoopHUFA_sim$upper <- zoopHUFA_pred$fit + 1.96*zoopHUFA_pred$se.fit
+zoopHUFA_sim$lower <- zoopHUFA_pred$fit - 1.96*zoopHUFA_pred$se.fit
+
+### Plot ----
+
+colours <- c("DHA" = "orange",
+             "EPA" = "blue",
+             "ARA" = "purple",
+             "Total HUFAs" = "red")
+
+png("Zooplankton ARA, EPA, DHA, and HUFAs Plot.png",
+    width = 12,
     height= 8, 
     units = "cm",
     res = 600)
 
 ggplot(zoop_FA) +
+  geom_ribbon(data = zoopARA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "ARA"),
+              alpha = 0.1) +
+  geom_line(data = zoopARA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "ARA")) +
+  geom_point(aes(x = MPconcentration,
+                 y = C_20.4n.6,
+                 colour = "ARA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
+  geom_ribbon(data = zoopEPA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "EPA"),
+              alpha = 0.1) +
+  geom_line(data = zoopEPA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "EPA")) +
   geom_point(aes(x = MPconcentration,
                  y = C_20.5n.3,
-                 colour = "EPA")) +
+                 colour = "EPA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
+  geom_ribbon(data = zoopDHA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "DHA"),
+              alpha = 0.1) +     
+  geom_line(data = zoopDHA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "DHA")) +
+  geom_point(aes(x = MPconcentration,
+                 y = C_22.6n.3,
+                 colour = "DHA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
+  geom_ribbon(data = zoopHUFA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "Total HUFAs"),
+              alpha = 0.1) +     
+  geom_line(data = zoopHUFA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "Total HUFAs")) +
+  geom_point(aes(x = MPconcentration,
+                 y = HUFAs,
+                 colour = "Total HUFAs"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
+       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
+  scale_colour_manual(values = colours,
+                      name = "") +
+  scale_fill_manual(values = colours,
+                    name = "") +
+  theme1
+
+dev.off()
+
+
+
+
+
+
+png("Zooplankton ARA, EPA, DHA, and HUFAs Plot.png",
+    width = 12,
+    height= 19, 
+    units = "cm",
+    res = 600)
+
+ggplot(zoop_FA) +
+  geom_point(aes(x = MPconcentration,
+                 y = C_20.4n.6,
+                 colour = "ARA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
+  geom_smooth(aes(x = MPconcentration,
+                  y = C_20.4n.6,
+                  colour = "ARA"),
+              method = "lm") +
+  geom_point(aes(x = MPconcentration,
+                 y = C_20.5n.3,
+                 colour = "EPA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
   geom_smooth(aes(x = MPconcentration,
                   y = C_20.5n.3,
                   colour = "EPA"),
               method = "lm") +
   geom_point(aes(x = MPconcentration,
                  y = C_22.6n.3,
-                 colour = "DHA")) +
+                 colour = "DHA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
   geom_smooth(aes(x = MPconcentration,
                   y = C_22.6n.3,
                   colour = "DHA"),
+              method = "lm") +
+  geom_point(aes(x = MPconcentration,
+                 y = HUFAs,
+                 colour = "Total HUFAs"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
+  geom_smooth(aes(x = MPconcentration,
+                  y = HUFAs,
+                  colour = "Total HUFAs"),
               method = "lm") +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
@@ -456,7 +734,7 @@ ggplot(zoop_FA) +
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
   scale_colour_manual(values = colours,
                       name = "") +
-  facet_grid(~date) +
+  facet_wrap(~date, ncol = 1) +
   theme1
 
 dev.off()
@@ -469,26 +747,34 @@ dev.off()
 
 png("Fish Food ARA, EPA and DHA Plot.png",
     width = 9,
-    height= 6, 
+    height= 9, 
     units = "cm",
     res = 600)
 
 ggplot(food_FA) +
-  geom_boxplot(aes(x = 1,
+  geom_violin(aes(x = 1,
                    y = C_20.4n.6,
-                   fill = "ARA")) +
-  geom_boxplot(aes(x = 2,
+                   fill = "ARA"),
+               size = 0.25) +
+  geom_violin(aes(x = 2,
                    y = C_20.5n.3,
-                   fill = "EPA")) +
-  geom_boxplot(aes(x = 3,
+                   fill = "EPA"),
+               size = 0.5) +
+  geom_violin(aes(x = 3,
                    y = C_22.6n.3,
-                   fill = "DHA")) +
+                   fill = "DHA"),
+               size = 0.25) +
+  geom_violin(aes(x = 4,
+                   y = HUFAs,
+                   fill = "Total HUFAs"),
+               size = 0.25) +
   labs(x = "",
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
   scale_fill_manual(values = colours,
                     name = "") +
   theme1 +
   theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
+        axis.ticks.x = element_blank(),
+        legend.position = "top")
 
 dev.off()
