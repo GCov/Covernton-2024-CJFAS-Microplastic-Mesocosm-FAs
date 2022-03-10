@@ -51,14 +51,70 @@ perch_biometrics$sex <- as.factor(perch_biometrics$sex)
 perch_FA2 <- left_join(perch_FA, perch_biometrics, 
                        by = c("ID", "corral"))
 
+# Effect of MP exposure on body weight----
+
+perch_FA2$date2 <- 
+  as.numeric(scale(as.numeric(perch_FA2$date), center = TRUE))
+
+perchweightmod1 <- glmmTMB(body.weight ~ 
+                             log(MPconcentration + 1) +
+                             (1 | corral),
+                           data = perch_FA2)
+
+plotResiduals(simulateResiduals(perchweightmod1))
+
+summary(perchweightmod1)  # no effect
+
+perchweight_predict <- predict(perchweightmod1,
+                                re.form = NA, 
+                                se.fit = TRUE)
+
+perchweight_predict$upper <- with(perchweight_predict,
+                                   fit + 1.98 * se.fit)
+
+perchweight_predict$lower <- with(perchweight_predict,
+                                   fit - 1.98 * se.fit)
+
+
+ggplot(perch_FA2) +
+  geom_point(aes(x = MPconcentration,
+                 y = body.weight)) +
+  geom_ribbon(aes(x = MPconcentration,
+                  ymin = perchweight_predict$lower,
+                  ymax = perchweight_predict$upper),
+              alpha = 0.3) +
+  geom_line(aes(x = MPconcentration,
+                y = perchweight_predict$fit),
+            size = 1) +
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
+       y = "Body Weight (g)") +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
+  theme1
+
+# Add population data ----
+
+fish_pop <- read.csv("fish_pop.csv", header = TRUE)
+
+str(fish_pop)
+
+fish_pop$corral <- as.factor(fish_pop$corral)
+fish_pop$MP.concentration <- as.numeric(fish_pop$MP.concentration)
+
+fish_pop$perch.surv <- with(fish_pop, YP.end/YP.start)
+
+ggplot(fish_pop) +
+  geom_point(aes(x = MP.concentration,
+                 y = perch.surv)) +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
+  theme1
+
 # Perch Analysis----
 
 ## Total FAs ----
 
 # Convert date to a centered numeric value
-
-perch_FA2$date2 <- 
-  as.numeric(scale(as.numeric(perch_FA2$date), center = TRUE))
 
 perchFAmod1 <- glmmTMB(total_FAs ~ 
                          log(MPconcentration + 1) +
