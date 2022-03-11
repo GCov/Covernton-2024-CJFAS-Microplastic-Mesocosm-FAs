@@ -53,6 +53,8 @@ perch_FA2 <- left_join(perch_FA, perch_biometrics,
 
 # Effect of MP exposure on body weight----
 
+# Scale date
+
 perch_FA2$date2 <- 
   as.numeric(scale(as.numeric(perch_FA2$date), center = TRUE))
 

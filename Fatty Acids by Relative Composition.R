@@ -8,6 +8,7 @@ library(dplyr)
 library(MuMIn)
 library(vegan)
 library(tidyr)
+library(Hmsc)
 
 # Load data ----
 
@@ -40,6 +41,11 @@ food_FA_percent <- subset(FAs_percent, sample.type == "fish food")
 perch_FA_percent2 <- left_join(perch_FA_percent, 
                                perch_biometrics, 
                        by = c("ID", "corral"))
+
+# Scale and center date
+
+perch_FA_percent2$date2 <- 
+  as.numeric(scale(as.numeric(perch_FA_percent2$date), center = TRUE))
 
 ## Plot by fatty acid composition ----
 
@@ -416,3 +422,71 @@ ggplot(FA_percent_long) +
   theme1
 
 dev.off()
+
+# Perch HMSC model----
+
+## Specify data ----
+
+perch_FA_percent_predictors <- 
+  perch_FA_percent2[,c(51,54,60)]  # pull out predictors
+
+perch_FA_percent_RE <- data.frame(corral = factor(perch_FA_percent2[,2]))
+perch_FA_percent_rlevels <- HmscRandomLevel(units = perch_FA_percent_RE$corral)
+
+perch_FA_percent_response <- 
+  perch_FA_percent2[,c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
+
+## Specify model structure ----
+
+model1 <- 
+  Hmsc(Y = perch_FA_percent_response,  # response data
+       XData = perch_FA_percent_predictors,  # covariates
+       XFormula = ~ body.weight + MPconcentration + date2,  # model formula
+       XScale = TRUE,  # scale covariates for fixed effects,
+       studyDesign = perch_FA_percent_RE,
+       ranLevels = list(corral = perch_FA_percent_rlevels),
+       distr = "lognormal")
+
+## Run MCMC chains ----
+
+perch_FA_percent_run1 <- sampleMcmc(model1,
+                                    thin = 10,
+                                    samples = 15000,
+                                    transient = 3000,
+                                    nChains = 3,
+                                    nParallel = 3,
+                                    verbose = 1000)
+
+## Check convergence ----
+
+perch_FA_percent_post1 <- convertToCodaObject(perch_FA_percent_run1)
+
+effectiveSize(perch_FA_percent_post1$Beta)
+gelman.diag(perch_FA_percent_post1$Beta, 
+            transform = TRUE,
+            multivariate = FALSE)$psrf
+
+plot(perch_FA_percent_post1$Beta)
+
+
+## Assess explanatory power ----
+
+perch_FA_percent_pred1 <- computePredictedValues(perch_FA_percent_run1)
+evaluateModelFit(hM = perch_FA_percent_run1, predY = perch_FA_percent_pred1)
+
+
+## Cross validation ----
+
+partition1 <- createPartition(perch_FA_percent_run1, nfolds = 2)
+perch_FA_percent_pred1.1 <- 
+  computePredictedValues(perch_FA_percent_run1, partition = partition1)
+
+evaluateModelFit(hM = perch_FA_percent_run1, 
+                 predY = perch_FA_percent_pred1.1)  # predictive power sucks
+
+## Look at slope estimates ----
+
+perch_FA_percent_postBeta <- getPostEstimate(perch_FA_percent_run1, parName = "Beta")
+plotBeta(perch_FA_percent_run1, post = perch_FA_percent_postBeta, 
+         param = "Support", supportLevel = 0.95)
+
