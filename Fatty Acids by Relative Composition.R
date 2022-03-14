@@ -482,11 +482,86 @@ perch_FA_percent_pred1.1 <-
   computePredictedValues(perch_FA_percent_run1, partition = partition1)
 
 evaluateModelFit(hM = perch_FA_percent_run1, 
-                 predY = perch_FA_percent_pred1.1)  # predictive power sucks
+                 predY = perch_FA_percent_pred1.1)
 
 ## Look at slope estimates ----
 
-perch_FA_percent_postBeta <- getPostEstimate(perch_FA_percent_run1, parName = "Beta")
+perch_FA_percent_postBeta <- 
+  getPostEstimate(perch_FA_percent_run1, parName = "Beta")
 plotBeta(perch_FA_percent_run1, post = perch_FA_percent_postBeta, 
+         param = "Support", supportLevel = 0.95)
+
+# Zooplankton HMSC model----
+
+## Specify data ----
+
+zoop_FA_percent_predictors <- 
+  data.frame(MPconcentration = 
+               zoop_FA_percent[zoop_FA_percent$date == "2021-08-09", 
+                               c(51)])  # pull out predictor
+
+zoop_FA_percent_RE <- 
+  data.frame(corral = 
+               factor(zoop_FA_percent[zoop_FA_percent$date == "2021-08-09",
+                                       2]))
+zoop_FA_percent_rlevels <- HmscRandomLevel(units = zoop_FA_percent_RE$corral)
+
+zoop_FA_percent_response <- 
+  zoop_FA_percent[zoop_FA_percent$date == "2021-08-09",
+                  c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
+
+## Specify model structure ----
+
+zoop_FA_percent_model1 <- 
+  Hmsc(Y = zoop_FA_percent_response,  # response data
+       XData = zoop_FA_percent_predictors,  # covariates
+       XFormula = ~ MPconcentration,  # model formula
+       XScale = TRUE,  # scale covariates for fixed effects,
+       studyDesign = zoop_FA_percent_RE,
+       ranLevels = list(corral = zoop_FA_percent_rlevels),
+       distr = "lognormal")
+
+## Run MCMC chains ----
+
+zoop_FA_percent_run1 <- sampleMcmc(zoop_FA_percent_model1,
+                                    thin = 15,
+                                    samples = 20000,
+                                    transient = 5000,
+                                    nChains = 3,
+                                    nParallel = 3,
+                                    verbose = 1000)
+
+## Check convergence ----
+
+zoop_FA_percent_post1 <- convertToCodaObject(zoop_FA_percent_run1)
+
+effectiveSize(zoop_FA_percent_post1$Beta)
+gelman.diag(zoop_FA_percent_post1$Beta, 
+            transform = TRUE,
+            multivariate = FALSE)$psrf
+
+plot(zoop_FA_percent_post1$Beta)
+
+
+## Assess explanatory power ----
+
+zoop_FA_percent_pred1 <- computePredictedValues(zoop_FA_percent_run1)
+evaluateModelFit(hM = zoop_FA_percent_run1, predY = zoop_FA_percent_pred1)
+
+
+## Cross validation ----
+
+partition1 <- createPartition(zoop_FA_percent_run1, nfolds = 2)
+zoop_FA_percent_pred1.1 <- 
+  computePredictedValues(zoop_FA_percent_run1, partition = partition1)
+
+evaluateModelFit(hM = zoop_FA_percent_run1, 
+                 predY = zoop_FA_percent_pred1.1)
+
+## Look at slope estimates ----
+
+zoop_FA_percent_postBeta <- 
+  getPostEstimate(zoop_FA_percent_run1, parName = "Beta")
+plotBeta(zoop_FA_percent_run1, post = zoop_FA_percent_postBeta, 
          param = "Support", supportLevel = 0.95)
 

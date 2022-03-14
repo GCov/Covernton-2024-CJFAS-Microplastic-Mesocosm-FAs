@@ -108,7 +108,7 @@ ggplot(perch_diet_long) +
   scale_y_continuous(expand = c(0.005,0.005),
                      breaks = c(0, 1, 10, 100, 1000)) +
   coord_trans(y = "log1p") +
-  facet_grid(.~reorder(treatment, MPconcentration, mean),
+  facet_grid(.~reorder(treatment, dose, mean),
              scales = "free_x",
              switch = "x",
              space = "free_x") +
