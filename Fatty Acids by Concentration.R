@@ -50,18 +50,25 @@ perch_biometrics$sex <- as.factor(perch_biometrics$sex)
 
 perch_FA2 <- left_join(perch_FA, perch_biometrics, 
                        by = c("ID", "corral"))
-
-# Effect of MP exposure on body weight----
-
 # Scale date
 
 perch_FA2$date2 <- 
   as.numeric(scale(as.numeric(perch_FA2$date), center = TRUE))
 
+# Effect of MP exposure on body weight----
+
+concentrations <- 
+  perch_FA2 %>% 
+  group_by(corral) %>% 
+  summarize(MPconcentration = unique(MPconcentration)[1])
+
+perch_biometrics2 <- left_join(perch_biometrics, concentrations, by = "corral")
+
 perchweightmod1 <- glmmTMB(body.weight ~ 
                              log(MPconcentration + 1) +
                              (1 | corral),
-                           data = perch_FA2)
+                           data = subset(perch_biometrics2,
+                                         !is.na(body.weight)))
 
 plotResiduals(simulateResiduals(perchweightmod1))
 
@@ -78,7 +85,8 @@ perchweight_predict$lower <- with(perchweight_predict,
                                    fit - 1.98 * se.fit)
 
 
-ggplot(perch_FA2) +
+ggplot(subset(perch_biometrics2,
+              !is.na(body.weight))) +
   geom_point(aes(x = MPconcentration,
                  y = body.weight)) +
   geom_ribbon(aes(x = MPconcentration,
@@ -111,6 +119,15 @@ ggplot(fish_pop) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
   theme1
+
+# Combine with FA data
+
+
+perch_FA2 <- left_join(perch_FA2, fish_pop, 
+                       by = c("corral", "MPconcentration"))
+
+plot(perch.surv ~ total_FAs, data = perch_FA2)
+plot(total_FAs ~ YP.end, data = perch_FA2)
 
 # Perch Analysis----
 

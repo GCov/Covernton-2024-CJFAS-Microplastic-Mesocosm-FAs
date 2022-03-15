@@ -28,46 +28,61 @@ FAs_percent <- left_join(FAs_percent,
 
 FAs_percent$MPconcentration[is.na(FAs_percent$MPconcentration)] <- 24
 
+# Convert to proportions
+FAs_prop <- FAs_percent
+FAs_prop[7:50] <- FAs_percent[7:50] / 100
+
 # Separate out by sample type ----
 
-perch_FA_percent <- subset(FAs_percent, sample.type == "perch")
-zoop_FA_percent <- subset(FAs_percent, sample.type == "zooplankton")
-food_FA_percent <- subset(FAs_percent, sample.type == "fish food")
+perch_FA_prop <- subset(FAs_prop, sample.type == "perch")
+zoop_FA_prop <- subset(FAs_prop, sample.type == "zooplankton")
+food_FA_prop <- subset(FAs_prop, sample.type == "fish food")
 
 # Add in perch biometrics data ----
 
 # Combine with perch FA data
 
-perch_FA_percent2 <- left_join(perch_FA_percent, 
+perch_FA_prop2 <- left_join(perch_FA_prop, 
                                perch_biometrics, 
                        by = c("ID", "corral"))
 
+# Add in perch population data ----
+
+perch_pop <- read.csv("fish_pop.csv", header = TRUE)
+
+# Combine with perch FA data
+
+perch_FA_prop2 <- left_join(perch_FA_prop2,
+                            perch_pop,
+                            by = c("corral", "MPconcentration"))
+
 # Scale and center date
 
-perch_FA_percent2$date2 <- 
-  as.numeric(scale(as.numeric(perch_FA_percent2$date), center = TRUE))
+perch_FA_prop2$date2 <- 
+  as.numeric(scale(as.numeric(perch_FA_prop2$date), center = TRUE))
 
 ## Plot by fatty acid composition ----
 
 # Put data into long form and remove totals
 
-perch_FA_percent_long <- 
-  perch_FA_percent2[,c(1:3,6,7:16,18:25,27:34,36:44,51:59)] %>%
-  pivot_longer(names(perch_FA_percent2[c(7:16,18:25,27:34,36:44)]),
+perch_FA_prop_long <- 
+  perch_FA_prop2[,c(1:3,6,7:16,18:25,27:34,36:44,51:59)] %>%
+  pivot_longer(names(perch_FA_prop2[c(7:16,18:25,27:34,36:44)]),
                names_to = "fatty.acid",
-               values_to = "percent")
+               values_to = "prop")
 
 # Plot
 
-ggplot(perch_FA_percent_long) +
+ggplot(perch_FA_prop_long) +
   geom_col(aes(x = ID,
-               y = percent,
+               y = prop,
                fill = fatty.acid),
            colour = "black",
            size = 0.25) +
-  scale_y_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,1)) +
   labs(x = expression(paste("MP Exposure Concentration (particles "~L^-1*")")),
-       y = "Percent Composition") +
+       y = "prop Composition") +
   scale_fill_hue(name = "Fatty Acid",
                  l = 75) +
   facet_grid(.~MPconcentration,
@@ -78,20 +93,60 @@ ggplot(perch_FA_percent_long) +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 
+# Explore different indicators ----
+
+# Scale and center zooplankton date
+
+zoop_FA_prop$date2 <- 
+  as.numeric(scale(as.numeric(zoop_FA_prop$date), center = TRUE))
+
+## Zooplankton PUFAs ----
+
+zoop_FA_prop_PUFA_mod1 <- 
+  glmmTMB(PUFAs ~ log(MPconcentration + 1),
+          data = subset(zoop_FA_prop, date > "2021-08-01"),
+          family = beta_family(link = "logit"))
+
+plotResiduals(zoop_FA_prop_PUFA_mod1)
+
+summary(zoop_FA_prop_PUFA_mod1)
+
+## Zooplankton n-6 PUFAs ----
+
+zoop_FA_prop_n.6.PUFA_mod1 <- 
+  glmmTMB(total_N.6_PUFAs ~ log(MPconcentration + 1),
+          data = subset(zoop_FA_prop, date > "2021-08-01"),
+          family = beta_family(link = "logit"))
+
+plotResiduals(zoop_FA_prop_n.6.PUFA_mod1)
+
+summary(zoop_FA_prop_n.6.PUFA_mod1)
+
+## Zooplankton n-3 PUFAs ----
+
+zoop_FA_prop_n.3.PUFA_mod1 <- 
+  glmmTMB(total_N.3_PUFAs ~ log(MPconcentration + 1),
+          data = subset(zoop_FA_prop, date > "2021-08-01"),
+          family = beta_family(link = "logit"))
+
+plotResiduals(zoop_FA_prop_n.3.PUFA_mod1)
+
+summary(zoop_FA_prop_n.3.PUFA_mod1)
+
 # Zooplankton nMDS ----
 
 # Pull out covariates
 
-zoop_FA_covariates <- zoop_FA_percent[,c(1:3,51),]
+zoop_FA_covariates <- zoop_FA_prop[,c(1:3,51),]
 
-zoop_FA_totals <- zoop_FA_percent[,c(17,26,35,45)]
+zoop_FA_totals <- zoop_FA_prop[,c(17,26,35,45)]
 
 # Pull out fatty acid composition matrix
 
-zoop_FA_percent_matrix <- zoop_FA_percent[,c(7:16,18:25,27:34,36:44)]
+zoop_FA_prop_matrix <- zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]
 
 # Calculate distance matrix
-zoop_FA_diss <- as.matrix(vegdist(zoop_FA_percent_matrix, 
+zoop_FA_diss <- as.matrix(vegdist(zoop_FA_prop_matrix, 
                                    method = "euclidean", 
                                    na.rm = TRUE), 
                            labels = TRUE)
@@ -138,7 +193,7 @@ zoop_FA_data.scores <- as.data.frame(scores(zoop_FA_nMDS1))
 zoop_FA_data.scores2 <- cbind(zoop_FA_data.scores,
                                zoop_FA_covariates)
 
-zoop_FA_scores <- `sppscores<-`(zoop_FA_nMDS1, zoop_FA_percent_matrix)
+zoop_FA_scores <- `sppscores<-`(zoop_FA_nMDS1, zoop_FA_prop_matrix)
 
 zoop_FA_variable_scores <- 
   as.data.frame(zoop_FA_scores$species)
@@ -211,7 +266,7 @@ dev.off()
 
 # PCA
 
-zoop_FA_pca <- prcomp(zoop_FA_percent_matrix, 
+zoop_FA_pca <- prcomp(zoop_FA_prop_matrix, 
                        center = TRUE,
                        scale. = TRUE)
 
@@ -229,18 +284,18 @@ ggbiplot(zoop_FA_pca,
 
 # Pull out covariates
 
-perch_FA_covariates <- perch_FA_percent2[,c(1:3,51:59),]
+perch_FA_covariates <- perch_FA_prop2[,c(1:3,51:59),]
 
-perch_FA_totals <- perch_FA_percent2[,c(17,26,35,45)]
+perch_FA_totals <- perch_FA_prop2[,c(17,26,35,45)]
 
 summary(perch_FA_totals)
 
 # Pull out fatty acid composition matrix
 
-perch_FA_percent_matrix <- perch_FA_percent2[,c(7:16,18:25,27:34,36:44)]
+perch_FA_prop_matrix <- perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]
 
 # Calculate distance matrix
-perch_FA_diss <- as.matrix(vegdist(perch_FA_percent_matrix, 
+perch_FA_diss <- as.matrix(vegdist(perch_FA_prop_matrix, 
                                    method = "euclidean", 
                                    na.rm = TRUE), 
                   labels = TRUE)
@@ -266,7 +321,7 @@ perch_FA_data.scores <- as.data.frame(scores(perch_FA_nMDS1))
 perch_FA_data.scores2 <- cbind(perch_FA_data.scores,
                                perch_FA_covariates)
 
-perch_FA_scores <- `sppscores<-`(perch_FA_nMDS1, perch_FA_percent_matrix)
+perch_FA_scores <- `sppscores<-`(perch_FA_nMDS1, perch_FA_prop_matrix)
 
 perch_FA_variable_scores <- 
   as.data.frame(perch_FA_scores$species)
@@ -337,7 +392,7 @@ ggplot() +
 
 dev.off()
 
-perch_FA_pca <- prcomp(perch_FA_percent_matrix, 
+perch_FA_pca <- prcomp(perch_FA_prop_matrix, 
                       center = TRUE,
                       scale. = TRUE)
 
@@ -355,34 +410,34 @@ ggbiplot(perch_FA_pca,
 
 ## Put data into long form ----
 
-FA_percent_long <- 
-  FAs_percent[,c(1:3,5,6,17,20,23,26,27,31,35,36,40,42,45:47,51)] %>%
-  pivot_longer(names(FAs_percent[c(17,20,23,26,27,31,35,36,40,42,45:47)]),
+FA_prop_long <- 
+  FAs_prop[,c(1:3,5,6,17,20,23,26,27,31,35,36,40,42,45:47,51)] %>%
+  pivot_longer(names(FAs_prop[c(17,20,23,26,27,31,35,36,40,42,45:47)]),
                names_to = "metric",
                values_to = "value")
 
-FA_percent_long$metric <- as.factor(FA_percent_long$metric)
+FA_prop_long$metric <- as.factor(FA_prop_long$metric)
 
-FA_percent_long$sample.type <- 
-  mapvalues(FA_percent_long$sample.type,
-            from = levels(FA_percent_long$sample.type),
+FA_prop_long$sample.type <- 
+  mapvalues(FA_prop_long$sample.type,
+            from = levels(FA_prop_long$sample.type),
             to = c("Mysis Fish Food",
                    "Yellow Perch",
                    "Zooplankton"))
 
 # Focus on endpoint Zooplankton
-FA_percent_long <- subset(FA_percent_long,
+FA_prop_long <- subset(FA_prop_long,
                           date >= "2021-08-01" |
                             sample.type == "Mysis Fish Food")
 
 # Set MP concentration to 0 for fish food
 
-FA_percent_long$MPconcentration[FA_percent_long$sample.type == 
+FA_prop_long$MPconcentration[FA_prop_long$sample.type == 
                                   "Mysis Fish Food"] <- 0
 
 # Define labeller
 
-percent_labels <- as_labeller(c("C_16.1n.7" = "Palmitoleic acid",
+prop_labels <- as_labeller(c("C_16.1n.7" = "Palmitoleic acid",
                                 "C_18.1n.9" = "Oleic acid",
                                 "C_18.2n.6" = "Linoleic acid",
                                 "C_18.3n.3" = "Alpha-linoleic acid",
@@ -404,7 +459,7 @@ png("Sample Comparison FA Plot.png",
     units = "cm",
     res = 600)
 
-ggplot(FA_percent_long) +
+ggplot(FA_prop_long) +
   geom_point(aes(x = MPconcentration,
                  y = value,
                  colour = sample.type)) +
@@ -412,9 +467,9 @@ ggplot(FA_percent_long) +
                   y = value,
                   colour = sample.type),
               method = "lm") +
-  facet_wrap(~metric, scales = "free_y", labeller = percent_labels, ncol = 3) +
+  facet_wrap(~metric, scales = "free_y", labeller = prop_labels, ncol = 3) +
   labs(x = "Sample Type",
-       y = "Percent of Total Fatty Acids") +
+       y = "prop of Total Fatty Acids") +
   scale_colour_manual(values = c("orange", "purple", "blue"),
                       name = "") +
   scale_x_continuous(trans = "log1p",
@@ -427,141 +482,140 @@ dev.off()
 
 ## Specify data ----
 
-perch_FA_percent_predictors <- 
-  perch_FA_percent2[,c(51,54,60)]  # pull out predictors
+perch_FA_prop_predictors <- 
+  perch_FA_prop2[,c(51,54,64)]  # pull out predictors
 
-perch_FA_percent_RE <- data.frame(corral = factor(perch_FA_percent2[,2]))
-perch_FA_percent_rlevels <- HmscRandomLevel(units = perch_FA_percent_RE$corral)
+perch_FA_prop_RE <- data.frame(corral = factor(perch_FA_prop2[,2]))
+perch_FA_prop_rlevels <- HmscRandomLevel(units = perch_FA_prop_RE$corral)
 
-perch_FA_percent_response <- 
-  perch_FA_percent2[,c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
+perch_FA_prop_response <- 
+  perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
 
 ## Specify model structure ----
 
 model1 <- 
-  Hmsc(Y = perch_FA_percent_response,  # response data
-       XData = perch_FA_percent_predictors,  # covariates
+  Hmsc(Y = perch_FA_prop_response,  # response data
+       XData = perch_FA_prop_predictors,  # covariates
        XFormula = ~ body.weight + MPconcentration + date2,  # model formula
        XScale = TRUE,  # scale covariates for fixed effects,
-       studyDesign = perch_FA_percent_RE,
-       ranLevels = list(corral = perch_FA_percent_rlevels),
-       distr = "lognormal")
+       studyDesign = perch_FA_prop_RE,
+       ranLevels = list(corral = perch_FA_prop_rlevels),
+       distr = "normal")
 
 ## Run MCMC chains ----
 
-perch_FA_percent_run1 <- sampleMcmc(model1,
-                                    thin = 10,
-                                    samples = 15000,
-                                    transient = 3000,
+set.seed(6461)
+
+perch_FA_prop_run1 <- sampleMcmc(model1,
+                                    thin = 1,
+                                    samples = 2000,
+                                    transient = 100,
                                     nChains = 3,
                                     nParallel = 3,
                                     verbose = 1000)
 
 ## Check convergence ----
 
-perch_FA_percent_post1 <- convertToCodaObject(perch_FA_percent_run1)
+perch_FA_prop_post1 <- convertToCodaObject(perch_FA_prop_run1)
 
-effectiveSize(perch_FA_percent_post1$Beta)
-gelman.diag(perch_FA_percent_post1$Beta, 
+effectiveSize(perch_FA_prop_post1$Beta)
+gelman.diag(perch_FA_prop_post1$Beta, 
             transform = TRUE,
             multivariate = FALSE)$psrf
 
-plot(perch_FA_percent_post1$Beta)
+plot(perch_FA_prop_post1$Beta)
 
 
 ## Assess explanatory power ----
 
-perch_FA_percent_pred1 <- computePredictedValues(perch_FA_percent_run1)
-evaluateModelFit(hM = perch_FA_percent_run1, predY = perch_FA_percent_pred1)
+perch_FA_prop_pred1 <- computePredictedValues(perch_FA_prop_run1)
+evaluateModelFit(hM = perch_FA_prop_run1, predY = perch_FA_prop_pred1)
 
 
 ## Cross validation ----
 
-partition1 <- createPartition(perch_FA_percent_run1, nfolds = 2)
-perch_FA_percent_pred1.1 <- 
-  computePredictedValues(perch_FA_percent_run1, partition = partition1)
+partition1 <- createPartition(perch_FA_prop_run1, nfolds = 2)
+perch_FA_prop_pred1.1 <- 
+  computePredictedValues(perch_FA_prop_run1, partition = partition1)
 
-evaluateModelFit(hM = perch_FA_percent_run1, 
-                 predY = perch_FA_percent_pred1.1)
+evaluateModelFit(hM = perch_FA_prop_run1, 
+                 predY = perch_FA_prop_pred1.1)
 
 ## Look at slope estimates ----
 
-perch_FA_percent_postBeta <- 
-  getPostEstimate(perch_FA_percent_run1, parName = "Beta")
-plotBeta(perch_FA_percent_run1, post = perch_FA_percent_postBeta, 
+perch_FA_prop_postBeta <- 
+  getPostEstimate(perch_FA_prop_run1, parName = "Beta")
+plotBeta(perch_FA_prop_run1, post = perch_FA_prop_postBeta, 
          param = "Support", supportLevel = 0.95)
 
 # Zooplankton HMSC model----
 
 ## Specify data ----
 
-zoop_FA_percent_predictors <- 
-  data.frame(MPconcentration = 
-               zoop_FA_percent[zoop_FA_percent$date == "2021-08-09", 
-                               c(51)])  # pull out predictor
+zoop_FA_prop$datefactor <- as.factor(zoop_FA_prop$date)
 
-zoop_FA_percent_RE <- 
-  data.frame(corral = 
-               factor(zoop_FA_percent[zoop_FA_percent$date == "2021-08-09",
-                                       2]))
-zoop_FA_percent_rlevels <- HmscRandomLevel(units = zoop_FA_percent_RE$corral)
+zoop_FA_prop_predictors <- zoop_FA_prop[,c(51,53)]  # pull out predictor
 
-zoop_FA_percent_response <- 
-  zoop_FA_percent[zoop_FA_percent$date == "2021-08-09",
-                  c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
+zoop_FA_prop_RE <- data.frame(corral = zoop_FA_prop[,2])
+zoop_FA_prop_rlevels <- HmscRandomLevel(units = zoop_FA_prop_RE$corral)
+
+zoop_FA_prop_response <- 
+  zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
 
 ## Specify model structure ----
 
-zoop_FA_percent_model1 <- 
-  Hmsc(Y = zoop_FA_percent_response,  # response data
-       XData = zoop_FA_percent_predictors,  # covariates
-       XFormula = ~ MPconcentration,  # model formula
+zoop_FA_prop_model1 <- 
+  Hmsc(Y = zoop_FA_prop_response,  # response data
+       XData = zoop_FA_prop_predictors,  # covariates
+       XFormula = ~ MPconcentration * datefactor,  # model formula
        XScale = TRUE,  # scale covariates for fixed effects,
-       studyDesign = zoop_FA_percent_RE,
-       ranLevels = list(corral = zoop_FA_percent_rlevels),
-       distr = "lognormal")
+       studyDesign = zoop_FA_prop_RE,
+       ranLevels = list(corral = zoop_FA_prop_rlevels),
+       distr = "normal")
 
 ## Run MCMC chains ----
 
-zoop_FA_percent_run1 <- sampleMcmc(zoop_FA_percent_model1,
-                                    thin = 15,
-                                    samples = 20000,
-                                    transient = 5000,
+set.seed(6561)
+
+zoop_FA_prop_run1 <- sampleMcmc(zoop_FA_prop_model1,
+                                    thin = 1,
+                                    samples = 2000,
+                                    transient = 100,
                                     nChains = 3,
                                     nParallel = 3,
                                     verbose = 1000)
 
 ## Check convergence ----
 
-zoop_FA_percent_post1 <- convertToCodaObject(zoop_FA_percent_run1)
+zoop_FA_prop_post1 <- convertToCodaObject(zoop_FA_prop_run1)
 
-effectiveSize(zoop_FA_percent_post1$Beta)
-gelman.diag(zoop_FA_percent_post1$Beta, 
+effectiveSize(zoop_FA_prop_post1$Beta)
+gelman.diag(zoop_FA_prop_post1$Beta, 
             transform = TRUE,
             multivariate = FALSE)$psrf
 
-plot(zoop_FA_percent_post1$Beta)
+plot(zoop_FA_prop_post1$Beta)
 
 
 ## Assess explanatory power ----
 
-zoop_FA_percent_pred1 <- computePredictedValues(zoop_FA_percent_run1)
-evaluateModelFit(hM = zoop_FA_percent_run1, predY = zoop_FA_percent_pred1)
+zoop_FA_prop_pred1 <- computePredictedValues(zoop_FA_prop_run1)
+evaluateModelFit(hM = zoop_FA_prop_run1, predY = zoop_FA_prop_pred1)
 
 
 ## Cross validation ----
 
-partition1 <- createPartition(zoop_FA_percent_run1, nfolds = 2)
-zoop_FA_percent_pred1.1 <- 
-  computePredictedValues(zoop_FA_percent_run1, partition = partition1)
+partition1 <- createPartition(zoop_FA_prop_run1, nfolds = 2)
+zoop_FA_prop_pred1.1 <- 
+  computePredictedValues(zoop_FA_prop_run1, partition = partition1)
 
-evaluateModelFit(hM = zoop_FA_percent_run1, 
-                 predY = zoop_FA_percent_pred1.1)
+evaluateModelFit(hM = zoop_FA_prop_run1, 
+                 predY = zoop_FA_prop_pred1.1)
 
 ## Look at slope estimates ----
 
-zoop_FA_percent_postBeta <- 
-  getPostEstimate(zoop_FA_percent_run1, parName = "Beta")
-plotBeta(zoop_FA_percent_run1, post = zoop_FA_percent_postBeta, 
+zoop_FA_prop_postBeta <- 
+  getPostEstimate(zoop_FA_prop_run1, parName = "Beta")
+plotBeta(zoop_FA_prop_run1, post = zoop_FA_prop_postBeta, 
          param = "Support", supportLevel = 0.95)
 
