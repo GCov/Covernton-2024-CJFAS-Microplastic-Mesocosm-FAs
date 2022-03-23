@@ -137,6 +137,7 @@ plot(total_FAs ~ YP.end, data = perch_FA2)
 
 perchFAmod1 <- glmmTMB(total_FAs ~ 
                          log(MPconcentration + 1) +
+                         body.weight +
                          (1 | corral),
                        data = perch_FA2)
 
@@ -144,15 +145,23 @@ plotResiduals(simulateResiduals(perchFAmod1))
 
 summary(perchFAmod1)  # no effect
 
-perch_tot_FA_predict <- predict(perchFAmod1,
-                                re.form = NA, 
-                                se.fit = TRUE)
+perch_tot_FA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(perch_FA2)),
+                           date2 = rep(0,
+                                       times = nrow(perch_FA2)),
+                           body.weight = rep(mean(perch_FA2$body.weight),
+                                             times = nrow(perch_FA2)),
+                           corral = rep(NA,
+                                        times = nrow(perch_FA2))) 
 
-perch_tot_FA_predict$upper <- with(perch_tot_FA_predict,
-                                   fit + 1.98 * se.fit)
+perch_tot_FA_pred <- predict(perchFAmod1,
+                             newdata = perch_tot_FA_sim,
+                             se.fit = TRUE)
 
-perch_tot_FA_predict$lower <- with(perch_tot_FA_predict,
-                                   fit - 1.98 * se.fit)
+perch_tot_FA_sim$pred <- perch_tot_FA_pred$fit
+perch_tot_FA_sim$upper <- perch_tot_FA_pred$fit + 1.96*perch_tot_FA_pred$se.fit
+perch_tot_FA_sim$lower <- perch_tot_FA_pred$fit - 1.96*perch_tot_FA_pred$se.fit
 
 
 ### Plot ----
@@ -163,18 +172,21 @@ png("Perch Total FA Plot.png",
     units = "cm",
     res = 600)
 
-ggplot(perch_FA) +
-  geom_point(aes(x = MPconcentration,
+ggplot() +
+  geom_point(data = perch_FA2,
+             aes(x = MPconcentration,
                  y = total_FAs,
                  fill = corral),
              size = 4,
              shape = 21) +
-  geom_ribbon(aes(x = MPconcentration,
-                  ymin = perch_tot_FA_predict$lower,
-                  ymax = perch_tot_FA_predict$upper),
+  geom_ribbon(data = perch_tot_FA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper),
               alpha = 0.3) +
-  geom_line(aes(x = MPconcentration,
-                y = perch_tot_FA_predict$fit),
+  geom_line(data = perch_tot_FA_sim,
+            aes(x = MPconcentration,
+                y = pred),
             size = 2) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Total fatty acids (mg "~g^-1*")"))) +
@@ -193,6 +205,7 @@ dev.off()
 
 perchARAmod1 <- glmmTMB(C_20.4n.6 ~ 
                           log(MPconcentration + 1) +
+                          body.weight +
                           date2 +
                           (1 | corral),
                         data = perch_FA2)
@@ -206,6 +219,8 @@ perchARA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  length.out = nrow(perch_FA2)),
                            date2 = rep(0,
                                        times = nrow(perch_FA2)),
+                           body.weight = rep(mean(perch_FA2$body.weight),
+                                             times = nrow(perch_FA2)),
                            corral = rep(NA,
                                         times = nrow(perch_FA2))) 
 
@@ -221,6 +236,7 @@ perchARA_sim$lower <- perchARA_pred$fit - 1.96*perchARA_pred$se.fit
 
 perchEPAmod1 <- glmmTMB(C_20.5n.3 ~ 
                           log(MPconcentration + 1) +
+                          body.weight +
                           date2 +
                           (1 | corral),
                         data = perch_FA2)
@@ -234,6 +250,8 @@ perchEPA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  length.out = nrow(perch_FA2)),
                            date2 = rep(0,
                                        times = nrow(perch_FA2)),
+                           body.weight = rep(mean(perch_FA2$body.weight),
+                                             times = nrow(perch_FA2)),
                            corral = rep(NA,
                                         times = nrow(perch_FA2))) 
 
@@ -249,6 +267,7 @@ perchEPA_sim$lower <- perchEPA_pred$fit - 1.96*perchEPA_pred$se.fit
 
 perchDHAmod1 <- glmmTMB(C_22.6n.3 ~ 
                           log(MPconcentration + 1) + 
+                          body.weight +
                           date2 +
                           (1 | corral),
                         data = perch_FA2)
@@ -262,6 +281,8 @@ perchDHA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  length.out = nrow(perch_FA2)),
                            date2 = rep(0,
                                        times = nrow(perch_FA2)),
+                           body.weight = rep(mean(perch_FA2$body.weight),
+                                             times = nrow(perch_FA2)),
                            corral = rep(NA,
                                         times = nrow(perch_FA2))) 
 
@@ -278,6 +299,7 @@ perchDHA_sim$lower <- perchDHA_pred$fit - 1.96*perchDHA_pred$se.fit
 perchHUFAmod1 <- glmmTMB(HUFAs ~ 
                           log(MPconcentration + 1) + 
                           date2 +
+                          body.weight +
                           (1 | corral),
                         data = perch_FA2)
 
@@ -290,6 +312,8 @@ perchHUFA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  length.out = nrow(perch_FA2)),
                            date2 = rep(0,
                                        times = nrow(perch_FA2)),
+                           body.weight = rep(mean(perch_FA2$body.weight),
+                                             times = nrow(perch_FA2)),
                            corral = rep(NA,
                                         times = nrow(perch_FA2))) 
 

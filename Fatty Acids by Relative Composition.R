@@ -10,6 +10,7 @@ library(vegan)
 library(tidyr)
 library(Hmsc)
 
+
 # Load data ----
 
 FAs_percent <- read.csv("FAs_percent.csv", header = TRUE)
