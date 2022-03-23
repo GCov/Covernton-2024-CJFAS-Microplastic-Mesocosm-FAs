@@ -206,7 +206,6 @@ dev.off()
 perchARAmod1 <- glmmTMB(C_20.4n.6 ~ 
                           log(MPconcentration + 1) +
                           body.weight +
-                          date2 +
                           (1 | corral),
                         data = perch_FA2)
 
@@ -217,8 +216,6 @@ summary(perchARAmod1)  # no effect
 perchARA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  to = 29240,
                                                  length.out = nrow(perch_FA2)),
-                           date2 = rep(0,
-                                       times = nrow(perch_FA2)),
                            body.weight = rep(mean(perch_FA2$body.weight),
                                              times = nrow(perch_FA2)),
                            corral = rep(NA,
@@ -237,7 +234,6 @@ perchARA_sim$lower <- perchARA_pred$fit - 1.96*perchARA_pred$se.fit
 perchEPAmod1 <- glmmTMB(C_20.5n.3 ~ 
                           log(MPconcentration + 1) +
                           body.weight +
-                          date2 +
                           (1 | corral),
                         data = perch_FA2)
 
@@ -248,8 +244,6 @@ summary(perchEPAmod1)  # no effect
 perchEPA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  to = 29240,
                                                  length.out = nrow(perch_FA2)),
-                           date2 = rep(0,
-                                       times = nrow(perch_FA2)),
                            body.weight = rep(mean(perch_FA2$body.weight),
                                              times = nrow(perch_FA2)),
                            corral = rep(NA,
@@ -268,7 +262,6 @@ perchEPA_sim$lower <- perchEPA_pred$fit - 1.96*perchEPA_pred$se.fit
 perchDHAmod1 <- glmmTMB(C_22.6n.3 ~ 
                           log(MPconcentration + 1) + 
                           body.weight +
-                          date2 +
                           (1 | corral),
                         data = perch_FA2)
 
@@ -279,8 +272,6 @@ summary(perchDHAmod1)  # strong effect
 perchDHA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  to = 29240,
                                                  length.out = nrow(perch_FA2)),
-                           date2 = rep(0,
-                                       times = nrow(perch_FA2)),
                            body.weight = rep(mean(perch_FA2$body.weight),
                                              times = nrow(perch_FA2)),
                            corral = rep(NA,
@@ -298,7 +289,6 @@ perchDHA_sim$lower <- perchDHA_pred$fit - 1.96*perchDHA_pred$se.fit
 
 perchHUFAmod1 <- glmmTMB(HUFAs ~ 
                           log(MPconcentration + 1) + 
-                          date2 +
                           body.weight +
                           (1 | corral),
                         data = perch_FA2)
@@ -436,7 +426,7 @@ perch_FA_long$metric <- as.factor(perch_FA_long$metric)
 ### DHA/ARA ----
 
 perchDHA.ARAmod1 <- glmmTMB(value ~ 
-                          log(MPconcentration + 1) + date2 + (1 | corral),
+                          log(MPconcentration + 1) + (1 | corral),
                           data = subset(perch_FA_long, metric == "DHA.ARA"))
 
 plotResiduals(simulateResiduals(perchDHA.ARAmod1))

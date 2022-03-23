@@ -11,6 +11,31 @@ library(R2jags)
 library(coda)
 library(lattice)
 library(ggridges)
+library(reshape2)
+
+extract.post <- function(x){
+  out <- data.frame(x$BUGSoutput$sims.list)
+  long <- melt(out)
+  long <- long[long$variable != "deviance", ]
+  long$variable <- as.character(long$variable)
+  long$variable <- as.factor(long$variable)
+  long
+}  # handy function for extracting posterior estimates of parameters
+
+summarize.post <- function(x){
+  x %>% 
+    group_by(variable) %>% 
+    summarize(mean = mean(value),
+              lower95 = quantile(value, 0.025),
+              upper95 = quantile(value, 0.979))
+}
+
+FA.names <- c("12:0", "13:0", "14:0", "15:0", "16:0", "17:0", "18:0", "20:0",
+              "22:0", "24:0", "12:1", "14:1", "16:1n-7", "16:1n-9", "18:1n-7",
+              "18:1n-9", "20:1n-9", "22:1n-9", "18:2n-6", "18:3n-6", "20:2n-6",
+              "20:3n-6", "20:4n-6", "22:2n-6", "22:4n-6", "22:5n-6", "18:3n-3",
+              "18:4n-3", "20:3n-3", "20:4n-3", "20:5n-3", "22:5n-3", "22:6n-3",
+              "24:5n-3", "24:6n-3")
 
 # Load data ----
 
@@ -74,29 +99,21 @@ perch_FA2$scaled.MPconcentration <-
   as.numeric(scale(perch_FA2$MPconcentration,
                    center = TRUE))
 
+# Perch Model ----
+
+## Prepare Data ----
+
 Y_perch_FA <- 
-  perch_FA2[,c(7:16,18:25,27:34,36:44)]  # pull out FA concentrations
+  FAs_percent[,c(7:16,18:25,27:34,36:44)]  # pull out FA concentrations
 
 X_perch_FA <- 
-  perch_FA2[,c(60:62)]  # pull out predictors
+  perch_FA2[,c(61:62)]  # pull out predictors
 
 ranef_ids_perch_FA <-
   as.integer(perch_FA2[,2])
   
 offset_perch_FA <- 
   cbind(replicate(ncol(Y_perch_FA), perch_FA2[,50]))
-
-boral.FA.mod <-
-  boral(y = Y_perch_FA,
-        X = X_perch_FA,,
-        family = "normal",
-        ranef.ids = ranef_ids_perch_FA,
-        offset = offset_perch_FA,
-        save.model = TRUE,
-        mcmc.control = list(n.burnin = 1000,
-                            n.iteration = 5000,
-                            n.thin = 4,
-                            seed = 31254))
 
 ## Specify model ####
 
@@ -107,10 +124,8 @@ perchFAmod <-
       for (j in 1:p) {
         eta[i, j] <-
           ranef.coefs.ID1[j, ranef.ids[i]] +
-          beta.date[j] * date[i] +
           beta.weight[j] * weight[i] +
-          beta.conc[j] * conc[i] +
-          offset[i, j]
+          beta.conc[j] * conc[i]
         
         y[i, j] ~ dnorm(lv.coefs[j] + eta[i, j],
                         pow(lv.sd[j],-2))
@@ -125,7 +140,6 @@ perchFAmod <-
         ranef.coefs.ID1[j, i] ~ dnorm(0, pow(ranef.sigma.ID1[j],-2))
       }
       ranef.sigma.ID1[j] ~ dunif(0, 30)
-      beta.date[j] ~ dnorm(0, 0.1)
       beta.weight[j] ~ dnorm(0, 0.1)
       beta.conc[j] ~ dnorm(0, 0.1)
       lv.sd[j] ~ dunif(0, 30) ## Dispersion parameters
@@ -139,7 +153,6 @@ perchFAmodinit <- function()
   list(
     "lv.coefs" = rnorm(35),
     "ranef.sigma.ID1" = runif(35, min = 0, max = 30),
-    "beta.date" = rnorm(35),
     "beta.weight" = rnorm(35),
     "beta.conc" = rnorm(35),
     "lv.sd" = runif(35, min = 0, max = 30)
@@ -148,8 +161,7 @@ perchFAmodinit <- function()
 
 ## Keep track of parameters ####
 
-perchFAmodparam <- c("beta.date",
-                     "beta.weight",
+perchFAmodparam <- c("beta.weight",
                      "beta.conc")
 
 ## Specify data for model ####
@@ -158,10 +170,8 @@ perchFAmoddata <-
   list(
     n = nrow(perch_FA2),
     p = ncol(Y_perch_FA),
-    date = X_perch_FA$scaled.date,
     weight = X_perch_FA$scaled.body.weight,
     conc = X_perch_FA$scaled.MPconcentration,
-    offset = offset_perch_FA,
     y = Y_perch_FA,
     n.ranefID = max(ranef_ids_perch_FA),
     ranef.ids = ranef_ids_perch_FA
@@ -176,15 +186,53 @@ perchFAmodrun1 <-
     parameters.to.save = perchFAmodparam,
     n.chains = 3,
     n.cluster = 16,
-    n.iter = 5000,
+    n.iter = 40000,
     n.burnin = 1000,
-    n.thin = 4,
+    n.thin = 39,
     jags.seed = 46956,
     model = perchFAmod
     )
 
 perchFAmodrun1
 perchFAmodrun1mcmc <- as.mcmc(perchFAmodrun1)
-xyplot(perchFAmodrun1mcmc)  # trace plots
 
-perchFAmodrun1$BUGSoutput$sims.list
+perchFAmodrun1_post <- extract.post(perchFAmodrun1)
+
+perchFAmodrun1_post_summary <- summarize.post(perchFAmodrun1_post)
+  
+perchFAmodrun1_post_summary$FA <- rep(FA.names, times = 2)
+
+perchFAmodrun1_post_summary$coefficient <- 
+  c(rep("MP Concentration", times = 35),
+    rep("Body Weight", times = 35))
+
+png("Perch Multivariate GLMM Plot.png",
+    width = 19,
+    height= 20, 
+    units = "cm",
+    res = 600)
+
+ggplot(perchFAmodrun1_post_summary) +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed") +
+  geom_point(aes(x = mean, 
+                 y = coefficient),
+             colour = "red",
+             size = 1.5) +
+  geom_linerange(aes(xmin = lower95,
+                     xmax = upper95,
+                     y = coefficient),
+                 colour = "red",
+                 size = 0.5) +
+  labs(x = "Slope",
+       y = "Variable") +
+  facet_wrap(~FA,
+             ncol = 5,
+             scales = "free_x") +
+  theme1 +
+  theme(axis.text.x = element_text(angle = 20,
+                                   hjust = 1))
+  
+
+dev.off()
+
