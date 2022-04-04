@@ -109,12 +109,12 @@ fish_pop <- read.csv("fish_pop.csv", header = TRUE)
 str(fish_pop)
 
 fish_pop$corral <- as.factor(fish_pop$corral)
-fish_pop$MP.concentration <- as.numeric(fish_pop$MP.concentration)
+fish_pop$MPconcentration <- as.numeric(fish_pop$MPconcentration)
 
 fish_pop$perch.surv <- with(fish_pop, YP.end/YP.start)
 
 ggplot(fish_pop) +
-  geom_point(aes(x = MP.concentration,
+  geom_point(aes(x = MPconcentration,
                  y = perch.surv)) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
@@ -295,7 +295,7 @@ perchHUFAmod1 <- glmmTMB(HUFAs ~
 
 plotResiduals(simulateResiduals(perchHUFAmod1))
 
-summary(perchHUFAmod1)  # slight effect
+summary(perchHUFAmod1)  # weak effect
 
 perchHUFA_sim <- data.frame(MPconcentration = seq(from = 0,
                                                  to = 29240,
@@ -416,8 +416,8 @@ perch_FA2$OA.PA <- with(perch_FA2, C_18.1n.9 / C_16.1n.7)
 names(perch_FA2)
 
 perch_FA_long <- 
-  perch_FA2[,c(1:6, 17, 26, 35, 45:48, 51:63)] %>%
-  pivot_longer(names(perch_FA2)[c(61:63)],
+  perch_FA2[,c(1:6, 17, 26, 35, 45:48, 51:68)] %>%
+  pivot_longer(names(perch_FA2)[c(66:68)],
                names_to = "metric",
                values_to = "value")
 
@@ -426,24 +426,26 @@ perch_FA_long$metric <- as.factor(perch_FA_long$metric)
 ### DHA/ARA ----
 
 perchDHA.ARAmod1 <- glmmTMB(value ~ 
-                          log(MPconcentration + 1) + (1 | corral),
+                          log(MPconcentration + 1) + 
+                          (1 | corral),
                           data = subset(perch_FA_long, metric == "DHA.ARA"))
 
 plotResiduals(simulateResiduals(perchDHA.ARAmod1))
 
 summary(perchDHA.ARAmod1)  # weak effect
 
-perchDHA.ARA_sim <- data.frame(MPconcentration = seq(from = 0,
-                                                 to = 29240,
-                                                 length.out = nrow(perch_FA2)),
-                           date2 = rep(0,
-                                       times = nrow(perch_FA2)),
-                           corral = rep(NA,
-                                        times = nrow(perch_FA2))) 
+perch_ratio_sim <- data.frame(MPconcentration = perch_FA2$MPconcentration,
+                              body.weight = rep(mean(perch_FA2$body.weight), 
+                                                times = 24),
+                              date2 = rep(0,
+                                       times = 24),
+                              corral = rep(NA,
+                                           times = 24)) 
 
 perchDHA.ARA_pred <- predict(perchDHA.ARAmod1,
-                         newdata = perchDHA.ARA_sim,
-                         se.fit = TRUE)
+                             newdata = perch_ratio_sim,
+                             se.fit = TRUE,
+                             re.form = NA)
 
 perch_FA_long$pred <- rep(NA, times = nrow(perch_FA_long))
 perch_FA_long$upper <- rep(NA, times = nrow(perch_FA_long))
@@ -458,15 +460,73 @@ perch_FA_long$upper[perch_FA_long$metric == "DHA.ARA"] <-
 perch_FA_long$lower[perch_FA_long$metric == "DHA.ARA"] <- 
   perchDHA.ARA_pred$fit - 1.96*perchDHA.ARA_pred$se.fit
 
+### n-3/n-6 ----
+
+perchn3.n6mod1 <- glmmTMB(value ~ 
+                            log(MPconcentration + 1) + 
+                            scale(body.weight, center = TRUE) +
+                            (1 | corral),
+                            data = subset(perch_FA_long, metric == "n3.n6"))
+
+plotResiduals(simulateResiduals(perchn3.n6mod1))
+
+summary(perchn3.n6mod1)  # no effect
+
+perchn3.n6_pred <- predict(perchn3.n6mod1,
+                           newdata = perch_ratio_sim,
+                           se.fit = TRUE,
+                           re.form = NA)
+
+perch_FA_long$pred[perch_FA_long$metric == "n3.n6"] <- 
+  perchn3.n6_pred$fit
+
+perch_FA_long$upper[perch_FA_long$metric == "n3.n6"] <- 
+  perchn3.n6_pred$fit + 1.96*perchn3.n6_pred$se.fit
+
+perch_FA_long$lower[perch_FA_long$metric == "n3.n6"] <- 
+  perchn3.n6_pred$fit - 1.96*perchn3.n6_pred$se.fit
+
+### OA/PA ----
+
+perchOA.PAmod1 <- glmmTMB(value ~ 
+                            log(MPconcentration + 1) + 
+                            (1 | corral),
+                          data = subset(perch_FA_long, metric == "OA.PA"))
+
+plotResiduals(simulateResiduals(perchOA.PAmod1))
+
+summary(perchOA.PAmod1)  # no effect
+
+perchOA.PA_pred <- predict(perchOA.PAmod1,
+                           newdata = perch_ratio_sim,
+                           se.fit = TRUE,
+                           re.form = NA)
+
+perch_FA_long$pred[perch_FA_long$metric == "OA.PA"] <- 
+  perchOA.PA_pred$fit
+
+perch_FA_long$upper[perch_FA_long$metric == "OA.PA"] <- 
+  perchOA.PA_pred$fit + 1.96*perchOA.PA_pred$se.fit
+
+perch_FA_long$lower[perch_FA_long$metric == "OA.PA"] <- 
+  perchOA.PA_pred$fit - 1.96*perchOA.PA_pred$se.fit
+
 ### Plot ----
 
 png("Perch FA Ratios Plot.png",
     width = 19,
-    height= 15, 
+    height= 7, 
     units = "cm",
     res = 600)
 
 ggplot(perch_FA_long) +
+  geom_ribbon(aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper),
+              fill = "red",
+              alpha = 0.3) +
+  geom_line(aes(x = MPconcentration,
+                y = pred)) +
   geom_point(aes(x = MPconcentration,
                  y = value)) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
@@ -478,7 +538,7 @@ ggplot(perch_FA_long) +
                                       "n3.n6" = "n-3:n-6",
                                       "OA.PA" = 
                                         "Oleic acid:Palmitoleic acid")),
-             ncol = 2) +
+             ncol = 3) +
   theme1
 
 dev.off()
@@ -489,7 +549,9 @@ dev.off()
 # Convert date to a centered numeric value
 
 zoop_FA$date2 <- 
-  as.numeric(scale(as.numeric(zoop_FA$date), center = TRUE))
+  as.numeric(scale(as.numeric(zoop_FA$date), 
+                   center = min(as.numeric(zoop_FA$date)),
+                   scale = 74))
 
 # Convert date to a factor
 
@@ -511,7 +573,7 @@ zoopFAmod2 <- glmmTMB(total_FAs ~
                         (1 | corral),
                       data = zoop_FA)
 
-anova(zoopFAmod1, zoopFAmod2)  # weak interaction
+anova(zoopFAmod1, zoopFAmod2)  # not significant
 
 summary(zoopFAmod2)
 
@@ -575,13 +637,13 @@ plotResiduals(simulateResiduals(zoopARAmod1))
 
 summary(zoopARAmod1)  # no effect
 
-zoopARA_sim <- data.frame(MPconcentration = seq(from = 0,
+zoopARA_sim <- expand.grid(MPconcentration = seq(from = 0,
                                                  to = 29240,
-                                                 length.out = nrow(zoop_FA)),
-                           date2 = rep(0,
-                                       times = nrow(zoop_FA)),
-                           corral = rep(NA,
-                                        times = nrow(zoop_FA))) 
+                                                 length.out = 1000),
+                           date2 = c("2021-05-27",
+                                     "2021-07-06",
+                                     "2021-08-09"),
+                           corral = NA)
 
 zoopARA_pred <- predict(zoopARAmod1,
                          newdata = zoopARA_sim,
@@ -603,13 +665,13 @@ plotResiduals(simulateResiduals(zoopEPAmod1))
 
 summary(zoopEPAmod1)  # no effect
 
-zoopEPA_sim <- data.frame(MPconcentration = seq(from = 0,
+zoopEPA_sim <- expand.grid(MPconcentration = seq(from = 0,
                                                  to = 29240,
-                                                 length.out = nrow(zoop_FA)),
-                           date2 = rep(0,
-                                       times = nrow(zoop_FA)),
-                           corral = rep(NA,
-                                        times = nrow(zoop_FA))) 
+                                                 length.out = 1000),
+                           date2 = c("2021-05-27",
+                                     "2021-07-06",
+                                     "2021-08-09"),
+                           corral = NA)
 
 zoopEPA_pred <- predict(zoopEPAmod1,
                          newdata = zoopEPA_sim,
@@ -629,15 +691,15 @@ zoopDHAmod1 <- glmmTMB(C_22.6n.3 ~
 
 plotResiduals(simulateResiduals(zoopDHAmod1))
 
-summary(zoopDHAmod1)  # strong effect
+summary(zoopDHAmod1)  # no effect
 
-zoopDHA_sim <- data.frame(MPconcentration = seq(from = 0,
+zoopDHA_sim <- expand.grid(MPconcentration = seq(from = 0,
                                                  to = 29240,
-                                                 length.out = nrow(zoop_FA)),
-                           date2 = rep(0,
-                                       times = nrow(zoop_FA)),
-                           corral = rep(NA,
-                                        times = nrow(zoop_FA))) 
+                                                 length.out = 1000),
+                           date2 = c("2021-05-27",
+                                     "2021-07-06",
+                                     "2021-08-09"),
+                           corral = NA)
 
 zoopDHA_pred <- predict(zoopDHAmod1,
                          newdata = zoopDHA_sim,
@@ -657,15 +719,15 @@ zoopHUFAmod1 <- glmmTMB(HUFAs ~
 
 plotResiduals(simulateResiduals(zoopHUFAmod1))
 
-summary(zoopHUFAmod1)  # slight effect
+summary(zoopHUFAmod1)  # no effect
 
-zoopHUFA_sim <- data.frame(MPconcentration = seq(from = 0,
+zoopHUFA_sim <- expand.grid(MPconcentration = seq(from = 0,
                                                   to = 29240,
-                                                  length.out = nrow(zoop_FA)),
-                            date2 = rep(0,
-                                        times = nrow(zoop_FA)),
-                            corral = rep(NA,
-                                         times = nrow(zoop_FA))) 
+                                                  length.out = 1000),
+                            date2 = c("2021-05-27",
+                                      "2021-07-06",
+                                      "2021-08-09"),
+                            corral = NA)
 
 zoopHUFA_pred <- predict(zoopHUFAmod1,
                           newdata = zoopHUFA_sim,
@@ -683,7 +745,7 @@ colours <- c("DHA" = "orange",
              "Total HUFAs" = "red")
 
 png("Zooplankton ARA, EPA, DHA, and HUFAs Plot.png",
-    width = 12,
+    width = 19,
     height= 8, 
     units = "cm",
     res = 600)
@@ -761,74 +823,10 @@ ggplot(zoop_FA) +
                       name = "") +
   scale_fill_manual(values = colours,
                     name = "") +
+  facet_wrap(~ date2) +
   theme1
 
 dev.off()
-
-
-
-
-
-
-png("Zooplankton ARA, EPA, DHA, and HUFAs Plot.png",
-    width = 12,
-    height= 19, 
-    units = "cm",
-    res = 600)
-
-ggplot(zoop_FA) +
-  geom_point(aes(x = MPconcentration,
-                 y = C_20.4n.6,
-                 colour = "ARA"),
-             size = 1,
-             shape = 21,
-             alpha = 0.75) +
-  geom_smooth(aes(x = MPconcentration,
-                  y = C_20.4n.6,
-                  colour = "ARA"),
-              method = "lm") +
-  geom_point(aes(x = MPconcentration,
-                 y = C_20.5n.3,
-                 colour = "EPA"),
-             size = 1,
-             shape = 21,
-             alpha = 0.75) +
-  geom_smooth(aes(x = MPconcentration,
-                  y = C_20.5n.3,
-                  colour = "EPA"),
-              method = "lm") +
-  geom_point(aes(x = MPconcentration,
-                 y = C_22.6n.3,
-                 colour = "DHA"),
-             size = 1,
-             shape = 21,
-             alpha = 0.75) +
-  geom_smooth(aes(x = MPconcentration,
-                  y = C_22.6n.3,
-                  colour = "DHA"),
-              method = "lm") +
-  geom_point(aes(x = MPconcentration,
-                 y = HUFAs,
-                 colour = "Total HUFAs"),
-             size = 1,
-             shape = 21,
-             alpha = 0.75) +
-  geom_smooth(aes(x = MPconcentration,
-                  y = HUFAs,
-                  colour = "Total HUFAs"),
-              method = "lm") +
-  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
-       y = expression(paste("Concentration (mg "~g^-1*")"))) +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  scale_colour_manual(values = colours,
-                      name = "") +
-  facet_wrap(~date, ncol = 1) +
-  theme1
-
-dev.off()
-
-
 
 
 

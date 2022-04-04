@@ -260,7 +260,7 @@ for(i in 1:length(unique(perch_FA_data.scores2$MPconcentration))) {
 
 png("Perch MDS Plot.png",
     width = 19,
-    height= 15, 
+    height= 14, 
     units = "cm",
     res = 600)
 
@@ -395,6 +395,12 @@ perch_FA_prop_long$metric <- as.factor(perch_FA_prop_long$metric)
 
 #### Plot predictions ----
 
+png("Perch Dirichlet Plot.png",
+    width = 25,
+    height= 17, 
+    units = "cm",
+    res = 600)
+
 ggplot() +
   geom_line(data = perch_FA_dir_newpredict_long,
             aes(x = MPconcentration,
@@ -409,6 +415,8 @@ ggplot() +
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
   facet_wrap(~ metric, ncol = 5, scales = "free_y") +
   theme1
+
+dev.off()
 
 
 
@@ -609,6 +617,13 @@ zoop_FA_prop_long_end <-
 
 #### Plot predictions ----
 
+png("Zooplankton Dirichlet Plot.png",
+    width = 25,
+    height= 17, 
+    units = "cm",
+    res = 600)
+
+
 ggplot() +
   geom_line(data = zoop_FA_prop_end_predict_long,
             aes(x = MPconcentration,
@@ -623,6 +638,8 @@ ggplot() +
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
   facet_wrap(~ metric, ncol = 5, scales = "free_y") +
   theme1
+
+dev.off()
 
 # DHA prediction
 
@@ -653,7 +670,6 @@ ggplot(zoop_FA_prop_end) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
   theme1
-
 
 
 
