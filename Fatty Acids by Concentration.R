@@ -199,17 +199,43 @@ ggplot() +
 
 dev.off()
 
-## ARA, EPA, DHA, total HUFAs -----
+## Individual FAs -----
+
+### LA ----
+
+perchLAmod1 <- glmmTMB(C_18.2n.6 ~ 
+                          log(MPconcentration + 1) +
+                          (1 | corral),
+                        data = perch_FA2)
+
+plot(simulateResiduals(perchLAmod1))
+
+summary(perchLAmod1)  # no effect
+
+perchLA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(perch_FA2)),
+                           body.weight = rep(mean(perch_FA2$body.weight),
+                                             times = nrow(perch_FA2)),
+                           corral = rep(NA,
+                                        times = nrow(perch_FA2))) 
+
+perchLA_pred <- predict(perchLAmod1,
+                         newdata = perchLA_sim,
+                         se.fit = TRUE)
+
+perchLA_sim$pred <- perchLA_pred$fit
+perchLA_sim$upper <- perchLA_pred$fit + 1.96*perchLA_pred$se.fit
+perchLA_sim$lower <- perchLA_pred$fit - 1.96*perchLA_pred$se.fit
 
 ### ARA ----
 
 perchARAmod1 <- glmmTMB(C_20.4n.6 ~ 
                           log(MPconcentration + 1) +
-                          body.weight +
                           (1 | corral),
                         data = perch_FA2)
 
-plotResiduals(simulateResiduals(perchARAmod1))
+plot(simulateResiduals(perchARAmod1))
 
 summary(perchARAmod1)  # no effect
 
@@ -229,15 +255,41 @@ perchARA_sim$pred <- perchARA_pred$fit
 perchARA_sim$upper <- perchARA_pred$fit + 1.96*perchARA_pred$se.fit
 perchARA_sim$lower <- perchARA_pred$fit - 1.96*perchARA_pred$se.fit
 
+### ALA ----
+
+perchALAmod1 <- glmmTMB(C_18.3n.3 ~ 
+                          log(MPconcentration + 1) +
+                          (1 | corral),
+                        data = perch_FA2)
+
+plot(simulateResiduals(perchALAmod1))
+
+summary(perchALAmod1)  # no effect
+
+perchALA_sim <- data.frame(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = nrow(perch_FA2)),
+                           body.weight = rep(mean(perch_FA2$body.weight),
+                                             times = nrow(perch_FA2)),
+                           corral = rep(NA,
+                                        times = nrow(perch_FA2))) 
+
+perchALA_pred <- predict(perchALAmod1,
+                         newdata = perchALA_sim,
+                         se.fit = TRUE)
+
+perchALA_sim$pred <- perchALA_pred$fit
+perchALA_sim$upper <- perchALA_pred$fit + 1.96*perchALA_pred$se.fit
+perchALA_sim$lower <- perchALA_pred$fit - 1.96*perchALA_pred$se.fit
+
 ### EPA ----
 
 perchEPAmod1 <- glmmTMB(C_20.5n.3 ~ 
                           log(MPconcentration + 1) +
-                          body.weight +
                           (1 | corral),
                         data = perch_FA2)
 
-plotResiduals(simulateResiduals(perchEPAmod1))
+plot(simulateResiduals(perchEPAmod1))
 
 summary(perchEPAmod1)  # no effect
 
@@ -261,11 +313,10 @@ perchEPA_sim$lower <- perchEPA_pred$fit - 1.96*perchEPA_pred$se.fit
 
 perchDHAmod1 <- glmmTMB(C_22.6n.3 ~ 
                           log(MPconcentration + 1) + 
-                          body.weight +
                           (1 | corral),
                         data = perch_FA2)
 
-plotResiduals(simulateResiduals(perchDHAmod1))
+plot(simulateResiduals(perchDHAmod1))
 
 summary(perchDHAmod1)  # strong effect
 
@@ -289,11 +340,10 @@ perchDHA_sim$lower <- perchDHA_pred$fit - 1.96*perchDHA_pred$se.fit
 
 perchHUFAmod1 <- glmmTMB(HUFAs ~ 
                           log(MPconcentration + 1) + 
-                          body.weight +
                           (1 | corral),
                         data = perch_FA2)
 
-plotResiduals(simulateResiduals(perchHUFAmod1))
+plot(simulateResiduals(perchHUFAmod1))
 
 summary(perchHUFAmod1)  # weak effect
 
@@ -317,24 +367,42 @@ perchHUFA_sim$lower <- perchHUFA_pred$fit - 1.96*perchHUFA_pred$se.fit
 
 ### Plot ----
 
-colours <- c("DHA" = "orange",
+colours <- c("LA" = "red", 
+             "ARA" = "orange",
+             "ALA" = "yellow",
+             "DHA" = "green",
              "EPA" = "blue",
-             "ARA" = "purple",
-             "Total HUFAs" = "red")
+             "Total HUFAs" = "purple4")
 
-png("Perch ARA, EPA, DHA, and HUFAs Plot.png",
+png("Perch Essential FAs Plot.png",
     width = 12,
-    height= 8, 
+    height= 9, 
     units = "cm",
     res = 600)
 
 ggplot(perch_FA) +
+  geom_ribbon(data = perchLA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "LA"),
+              alpha = 0.2) +
+  geom_line(data = perchLA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "LA")) +
+  geom_point(aes(x = MPconcentration,
+                 y = C_18.2n.6,
+                 colour = "LA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
   geom_ribbon(data = perchARA_sim,
               aes(x = MPconcentration,
                   ymin = lower,
                   ymax = upper,
                   fill = "ARA"),
-              alpha = 0.1) +
+              alpha = 0.2) +
   geom_line(data = perchARA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -345,12 +413,28 @@ ggplot(perch_FA) +
              size = 1,
              shape = 21,
              alpha = 0.75) +
+  geom_ribbon(data = perchALA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "ALA"),
+              alpha = 0.2) +
+  geom_line(data = perchALA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "ALA")) +
+  geom_point(aes(x = MPconcentration,
+                 y = C_18.3n.3,
+                 colour = "ALA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
   geom_ribbon(data = perchEPA_sim,
               aes(x = MPconcentration,
                   ymin = lower,
                   ymax = upper,
                   fill = "EPA"),
-              alpha = 0.1) +
+              alpha = 0.2) +
   geom_line(data = perchEPA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -366,7 +450,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "DHA"),
-              alpha = 0.1) +     
+              alpha = 0.2) +     
   geom_line(data = perchDHA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -382,7 +466,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "Total HUFAs"),
-              alpha = 0.1) +     
+              alpha = 0.2) +     
   geom_line(data = perchHUFA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -405,7 +489,7 @@ ggplot(perch_FA) +
 
 dev.off()
 
-## n-3/n-6, DHA/ARA, OA/PA ----
+## Ratios ----
 
 ### Put data into long form ----
 
@@ -624,16 +708,43 @@ dev.off()
 
 
 
-## ARA, EPA, DHA, total HUFAs ----
+## Individual FAs ----
+
+### LA ----
+
+zoopLAmod1 <- glmmTMB(C_18.2n.6 ~ 
+                         log(MPconcentration + 1) * date2 +
+                         (1 | corral),
+                       data = zoop_FA)
+
+plot(simulateResiduals(zoopLAmod1))
+
+summary(zoopLAmod1)  # no effect
+
+zoopLA_sim <- expand.grid(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = 1000),
+                           date2 = c("2021-05-27",
+                                     "2021-07-06",
+                                     "2021-08-09"),
+                           corral = NA)
+
+zoopLA_pred <- predict(zoopLAmod1,
+                        newdata = zoopLA_sim,
+                        se.fit = TRUE)
+
+zoopLA_sim$pred <- zoopLA_pred$fit
+zoopLA_sim$upper <- zoopLA_pred$fit + 1.96*zoopLA_pred$se.fit
+zoopLA_sim$lower <- zoopLA_pred$fit - 1.96*zoopLA_pred$se.fit
 
 ### ARA ----
 
 zoopARAmod1 <- glmmTMB(C_20.4n.6 ~ 
-                          log(MPconcentration + 1)*date2 +
+                          log(MPconcentration + 1) * date2 +
                           (1 | corral),
                         data = zoop_FA)
 
-plotResiduals(simulateResiduals(zoopARAmod1))
+plot(simulateResiduals(zoopARAmod1))
 
 summary(zoopARAmod1)  # no effect
 
@@ -653,6 +764,34 @@ zoopARA_sim$pred <- zoopARA_pred$fit
 zoopARA_sim$upper <- zoopARA_pred$fit + 1.96*zoopARA_pred$se.fit
 zoopARA_sim$lower <- zoopARA_pred$fit - 1.96*zoopARA_pred$se.fit
 
+### ALA ----
+
+zoopALAmod1 <- glmmTMB(C_18.3n.3 ~ 
+                         log(MPconcentration + 1) +
+                         date2 +
+                         (1 | corral),
+                       data = zoop_FA)
+
+plot(simulateResiduals(zoopALAmod1))
+
+summary(zoopALAmod1)  # no effect
+
+zoopALA_sim <- expand.grid(MPconcentration = seq(from = 0,
+                                                 to = 29240,
+                                                 length.out = 1000),
+                           date2 = c("2021-05-27",
+                                     "2021-07-06",
+                                     "2021-08-09"),
+                           corral = NA)
+
+zoopALA_pred <- predict(zoopALAmod1,
+                        newdata = zoopALA_sim,
+                        se.fit = TRUE)
+
+zoopALA_sim$pred <- zoopALA_pred$fit
+zoopALA_sim$upper <- zoopALA_pred$fit + 1.96*zoopALA_pred$se.fit
+zoopALA_sim$lower <- zoopALA_pred$fit - 1.96*zoopALA_pred$se.fit
+
 ### EPA ----
 
 zoopEPAmod1 <- glmmTMB(C_20.5n.3 ~ 
@@ -661,7 +800,7 @@ zoopEPAmod1 <- glmmTMB(C_20.5n.3 ~
                           (1 | corral),
                         data = zoop_FA)
 
-plotResiduals(simulateResiduals(zoopEPAmod1))
+plot(simulateResiduals(zoopEPAmod1))
 
 summary(zoopEPAmod1)  # no effect
 
@@ -689,7 +828,7 @@ zoopDHAmod1 <- glmmTMB(C_22.6n.3 ~
                           (1 | corral),
                         data = zoop_FA)
 
-plotResiduals(simulateResiduals(zoopDHAmod1))
+plot(simulateResiduals(zoopDHAmod1))
 
 summary(zoopDHAmod1)  # no effect
 
@@ -717,7 +856,7 @@ zoopHUFAmod1 <- glmmTMB(HUFAs ~
                            (1 | corral),
                          data = zoop_FA)
 
-plotResiduals(simulateResiduals(zoopHUFAmod1))
+plot(simulateResiduals(zoopHUFAmod1))
 
 summary(zoopHUFAmod1)  # no effect
 
@@ -739,24 +878,35 @@ zoopHUFA_sim$lower <- zoopHUFA_pred$fit - 1.96*zoopHUFA_pred$se.fit
 
 ### Plot ----
 
-colours <- c("DHA" = "orange",
-             "EPA" = "blue",
-             "ARA" = "purple",
-             "Total HUFAs" = "red")
-
-png("Zooplankton ARA, EPA, DHA, and HUFAs Plot.png",
+png("Zooplankton Essential FAs Plot.png",
     width = 19,
-    height= 8, 
+    height= 10, 
     units = "cm",
     res = 600)
 
 ggplot(zoop_FA) +
+  geom_ribbon(data = zoopLA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "LA"),
+              alpha = 0.2) +
+  geom_line(data = zoopLA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "LA")) +
+  geom_point(aes(x = MPconcentration,
+                 y = C_18.2n.6,
+                 colour = "LA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
   geom_ribbon(data = zoopARA_sim,
               aes(x = MPconcentration,
                   ymin = lower,
                   ymax = upper,
                   fill = "ARA"),
-              alpha = 0.1) +
+              alpha = 0.2) +
   geom_line(data = zoopARA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -767,12 +917,28 @@ ggplot(zoop_FA) +
              size = 1,
              shape = 21,
              alpha = 0.75) +
+  geom_ribbon(data = zoopALA_sim,
+              aes(x = MPconcentration,
+                  ymin = lower,
+                  ymax = upper,
+                  fill = "ALA"),
+              alpha = 0.2) +
+  geom_line(data = zoopALA_sim,
+            aes(x = MPconcentration,
+                y = pred,
+                colour = "ALA")) +
+  geom_point(aes(x = MPconcentration,
+                 y = C_18.3n.3,
+                 colour = "ALA"),
+             size = 1,
+             shape = 21,
+             alpha = 0.75) +
   geom_ribbon(data = zoopEPA_sim,
               aes(x = MPconcentration,
                   ymin = lower,
                   ymax = upper,
                   fill = "EPA"),
-              alpha = 0.1) +
+              alpha = 0.2) +
   geom_line(data = zoopEPA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -788,7 +954,7 @@ ggplot(zoop_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "DHA"),
-              alpha = 0.1) +     
+              alpha = 0.2) +     
   geom_line(data = zoopDHA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -804,7 +970,7 @@ ggplot(zoop_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "Total HUFAs"),
-              alpha = 0.1) +     
+              alpha = 0.2) +     
   geom_line(data = zoopHUFA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -832,7 +998,7 @@ dev.off()
 
 # Fish food ----
 
-png("Fish Food ARA, EPA and DHA Plot.png",
+png("Fish Food Essential FAs Plot.png",
     width = 9,
     height= 9, 
     units = "cm",
@@ -840,18 +1006,26 @@ png("Fish Food ARA, EPA and DHA Plot.png",
 
 ggplot(food_FA) +
   geom_violin(aes(x = 1,
+                  y = C_18.2n.6,
+                  fill = "LA"),
+              size = 0.25) +
+  geom_violin(aes(x = 2,
                    y = C_20.4n.6,
                    fill = "ARA"),
                size = 0.25) +
-  geom_violin(aes(x = 2,
+  geom_violin(aes(x = 3,
+                  y = C_18.3n.3,
+                  fill = "ALA"),
+              size = 0.5) +
+  geom_violin(aes(x = 4,
                    y = C_20.5n.3,
                    fill = "EPA"),
                size = 0.5) +
-  geom_violin(aes(x = 3,
+  geom_violin(aes(x = 5,
                    y = C_22.6n.3,
                    fill = "DHA"),
                size = 0.25) +
-  geom_violin(aes(x = 4,
+  geom_violin(aes(x = 6,
                    y = HUFAs,
                    fill = "Total HUFAs"),
                size = 0.25) +
