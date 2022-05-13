@@ -58,6 +58,26 @@ ggplot(data = perch_diet,
                      breaks = c(0, 1, 10, 100, 1000, 10000, 30000)) +
   theme1
 
+ggplot(data = perch_diet,
+       aes(x = MPconcentration,
+           y = cladocera)) +
+  geom_point() +
+  labs(x = expression(paste("Dose (particles"~L^-1*")")),
+       y = "Number of  animals in stomach") +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000, 30000)) +
+  theme1
+
+ggplot(data = perch_diet,
+       aes(x = MPconcentration,
+           y = cyclopoida)) +
+  geom_point() +
+  labs(x = expression(paste("Dose (particles"~L^-1*")")),
+       y = "Number of  animals in stomach") +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000, 30000)) +
+  theme1
+
 ## Put data into long format
 
 perch_diet_long <- 
@@ -100,7 +120,7 @@ ggplot(perch_diet_long) +
                fill = reorder(taxa, 1/(count+1), mean)),
            colour = "black",
            size = 0.25) +
-  labs(x = expression(paste("Dose (MPs"~L^-1*")")),
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = "Number of Individuals (log scale)") +
   scale_fill_brewer(type = "qual",
                     name = "Taxa",
@@ -108,7 +128,7 @@ ggplot(perch_diet_long) +
   scale_y_continuous(expand = c(0.005,0.005),
                      breaks = c(0, 1, 10, 100, 1000)) +
   coord_trans(y = "log1p") +
-  facet_grid(.~reorder(treatment, dose, mean),
+  facet_grid(.~reorder(treatment, MPconcentration, mean),
              scales = "free_x",
              switch = "x",
              space = "free_x") +
@@ -406,7 +426,7 @@ taxmod1data <-
     y = perch_diet_long$count,
     N = nrow(perch_diet_long),
     taxa = as.integer(perch_diet_long$taxa),
-    dose = as.numeric(scale(perch_diet_long$dose, center = TRUE)),
+    dose = as.numeric(scale(perch_diet_long$MPconcentration, center = TRUE)),
     length = as.numeric(scale(perch_diet_long$body.length, center = TRUE)),
     ind = as.integer(perch_diet_long$ID),
     corral = as.integer(perch_diet_long$corral),
@@ -540,7 +560,7 @@ taxmod2data <-
     y = perch_diet_long$count,
     N = nrow(perch_diet_long),
     taxa = as.integer(perch_diet_long$taxa),
-    dose = as.numeric(scale(perch_diet_long$dose, center = TRUE)),
+    dose = as.numeric(scale(perch_diet_long$MPconcentration, center = TRUE)),
     length = as.numeric(scale(perch_diet_long$body.length, center = TRUE)),
     ind = as.integer(perch_diet_long$ID),
     corral = as.integer(perch_diet_long$corral),
@@ -676,7 +696,7 @@ taxmod3data <-
     y = perch_diet_long$count,
     N = nrow(perch_diet_long),
     taxa = as.integer(perch_diet_long$taxa),
-    dose = as.numeric(scale(perch_diet_long$dose, center = TRUE)),
+    dose = as.numeric(scale(perch_diet_long$MPconcentration, center = TRUE)),
     length = as.numeric(scale(perch_diet_long$body.length, center = TRUE)),
     ind = as.integer(perch_diet_long$ID),
     corral = as.integer(perch_diet_long$corral),
