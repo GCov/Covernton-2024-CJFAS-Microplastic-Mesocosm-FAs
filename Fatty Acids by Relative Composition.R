@@ -206,7 +206,7 @@ perch_FA_prop_matrix <- perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]
 
 # Calculate distance matrix
 perch_FA_diss <- as.matrix(vegdist(perch_FA_prop_matrix, 
-                                   method = "euclidean", 
+                                   method = "jaccard", 
                                    na.rm = TRUE), 
                            labels = TRUE)
 
@@ -292,10 +292,12 @@ ggplot() +
             colour = "purple") +
   scale_fill_brewer(type = "div",
                     palette = "RdYlGn",
+                    direction = -1,
                     name = 
                       expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   scale_colour_brewer(type = "div",
                       palette = "RdYlGn",
+                      direction = -1,
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   theme1
@@ -441,7 +443,7 @@ zoop_FA_prop_matrix <- zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]
 
 # Calculate distance matrix
 zoop_FA_diss <- as.matrix(vegdist(zoop_FA_prop_matrix, 
-                                  method = "euclidean", 
+                                  method = "jaccard", 
                                   na.rm = TRUE), 
                           labels = TRUE)
 
@@ -505,12 +507,12 @@ zoop_FA_data.scores2$date <-
 
 zoop_FA_hulls <- data.frame()
 
-for(i in 1:length(unique(zoop_FA_data.scores2$date))) {
+for(i in 1:length(unique(zoop_FA_data.scores2$MPconcentration))) {
   hull <-
-    zoop_FA_data.scores2[zoop_FA_data.scores2$date ==
-                           unique(zoop_FA_data.scores2$date)[i],
-    ][chull(zoop_FA_data.scores2[zoop_FA_data.scores2$date ==
-                                   unique(zoop_FA_data.scores2$date)[i],
+    zoop_FA_data.scores2[zoop_FA_data.scores2$MPconcentration ==
+                           unique(zoop_FA_data.scores2$MPconcentration)[i],
+    ][chull(zoop_FA_data.scores2[zoop_FA_data.scores2$MPconcentration ==
+                                   unique(zoop_FA_data.scores2$MPconcentration)[i],
                                  c(1:2)]),]
   zoop_FA_hulls <- rbind(zoop_FA_hulls, hull)
 }
@@ -519,7 +521,7 @@ for(i in 1:length(unique(zoop_FA_data.scores2$date))) {
 
 png("Zooplankton MDS Plot.png",
     width = 19,
-    height= 13, 
+    height= 12, 
     units = "cm",
     res = 600)
 
@@ -527,10 +529,10 @@ ggplot() +
   geom_polygon(data = zoop_FA_hulls,
                aes(x = NMDS1,
                    y = NMDS2,
-                   colour = date),
-               alpha = 0.05,
-               size = 1,
-               fill = "black") +
+                   fill = MPconcentration,
+                   colour = MPconcentration),
+               alpha = 0.75,
+               size = 0.5) +
   geom_hline(aes(yintercept = 0),
              linetype = "dashed") +
   geom_vline(aes(xintercept = 0),
@@ -538,27 +540,28 @@ ggplot() +
   geom_point(data = zoop_FA_hulls,
              aes(x = NMDS1,
                  y = NMDS2,
-                 fill = MPconcentration),
+                 shape = date),
              alpha = 0.75,
-             size = 4,
-             shape = 21) +
+             size = 3) +
   geom_text(data = zoop_FA_variable_scores,
             aes(x = MDS1, 
                 y = MDS2, 
                 label = variable,
-                angle = MDS1*MDS2*5000),
+                angle = MDS1*MDS2*1000),
             alpha = 0.9,
-            size = 2,
+            size = 8 / .pt,
             colour = "purple") +
-  scale_colour_brewer(type = "qual",
-                    palette = "Set1",
-                    direction = -1,
-                    name = "Date") +
-  scale_fill_brewer(type = "div",
+  scale_colour_brewer(type = "div",
                       palette = "RdYlGn",
+                      direction = -1,
+                      name = 
+                        expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+  scale_fill_brewer(type = "div",
+                    palette = "RdYlGn",
                     direction = -1,
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+  scale_shape(name = "Date") +
   theme1
 
 dev.off()

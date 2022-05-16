@@ -627,6 +627,123 @@ ggplot(perch_FA_long) +
 
 dev.off()
 
+## nMDS ----
+
+### Run model ----
+
+# Pull out covariates
+
+perch_FA_conc_covariates <- perch_FA2[,c(1:3,51:65),]
+
+perch_FA_conc_totals <- perch_FA2[,c(17,26,35,45)]
+
+summary(perch_FA_conc_totals)
+
+# Pull out fatty acid composition matrix
+
+perch_FA_conc_matrix <- perch_FA2[,c(7:16,18:25,27:34,36:44)]
+
+# Calculate distance matrix
+perch_FA_conc_diss <- as.matrix(vegdist(perch_FA_conc_matrix,
+                                        method = "jaccard",
+                                        na.rm = TRUE),
+                                labels = TRUE)
+
+NMDS_scree(perch_FA_conc_diss)  # 3 dimensions looks good
+
+set.seed(5465)
+
+perch_FA_conc_nMDS1 <- 
+  metaMDS(perch_FA_conc_diss,
+          distance = "euclidean",
+          k = 3,
+          trymax = 250,
+          wascores = TRUE,
+          expand = TRUE,
+          autotransform = FALSE)
+
+# Shepards test/goodness of fit
+goodness(perch_FA_conc_nMDS1)
+stressplot(perch_FA_conc_nMDS1)
+
+perch_FA_conc_data.scores <- as.data.frame(scores(perch_FA_conc_nMDS1))
+perch_FA_conc_data.scores2 <- cbind(perch_FA_conc_data.scores,
+                                    perch_FA_conc_covariates)
+
+perch_FA_conc_scores <- `sppscores<-`(perch_FA_conc_nMDS1, 
+                                      perch_FA_conc_matrix)
+
+perch_FA_conc_variable_scores <- 
+  as.data.frame(perch_FA_conc_scores$species)
+
+perch_FA_conc_variable_scores$variable <- 
+  rownames(perch_FA_conc_variable_scores)
+
+### Generate hulls ----
+
+perch_FA_conc_data.scores2$MPconcentration <- 
+  as.factor(perch_FA_conc_data.scores2$MPconcentration)
+
+perch_FA_conc_hulls <- data.frame()
+
+for(i in 1:length(unique(perch_FA_conc_data.scores2$MPconcentration))) {
+  hull <-
+    perch_FA_conc_data.scores2[
+      perch_FA_conc_data.scores2$MPconcentration ==
+        unique(perch_FA_conc_data.scores2$MPconcentration)[i],
+      ][chull(perch_FA_conc_data.scores2[
+        perch_FA_conc_data.scores2$MPconcentration ==
+          unique(perch_FA_conc_data.scores2$MPconcentration)[i],
+        c(1:2)]), ]
+  perch_FA_conc_hulls <- rbind(perch_FA_conc_hulls, hull)
+}
+
+### Plot ----
+
+png("Perch FA Concentrations MDS Plot.png",
+    width = 19,
+    height= 14, 
+    units = "cm",
+    res = 600)
+
+ggplot() +
+  geom_polygon(data = perch_FA_conc_hulls,
+               aes(x = NMDS1,
+                   y = NMDS2,
+                   fill = MPconcentration,
+                   colour = MPconcentration),
+               alpha = 0.75,
+               size = 0.5) +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed") +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed") +
+  geom_label(data = perch_FA_conc_hulls,
+             aes(x = NMDS1,
+                 y = NMDS2,
+                 label = ID),
+             size = 4,
+             alpha = 0.3) +
+  geom_text(data = perch_FA_conc_variable_scores,
+            aes(x = MDS1, 
+                y = MDS2, 
+                label = variable,
+                angle = MDS1*MDS2*1000),
+            alpha = 0.9,
+            size = 3,
+            colour = "purple") +
+  scale_fill_brewer(type = "div",
+                    palette = "RdYlGn",
+                    name = 
+                      expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+  scale_colour_brewer(type = "div",
+                      palette = "RdYlGn",
+                      name = 
+                        expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+  theme1
+
+dev.off()
+
 
 # Zooplankton Analysis----
 
@@ -990,6 +1107,122 @@ ggplot(zoop_FA) +
   scale_fill_manual(values = colours,
                     name = "") +
   facet_wrap(~ date2) +
+  theme1
+
+dev.off()
+
+## nMDS ----
+
+# Pull out covariates
+
+zoop_FA_conc_covariates <- zoop_FA[,c(1:3,51)]
+
+zoop_FA_conc_totals <- zoop_FA[,c(17,26,35,45)]
+
+# Pull out fatty acid composition matrix
+
+zoop_FA_conc_matrix <- zoop_FA[,c(7:16,18:25,27:34,36:44)]
+
+# Calculate distance matrix
+zoop_FA_conc_diss <- as.matrix(vegdist(zoop_FA_conc_matrix, 
+                                       method = "jaccard",
+                                       na.rm = TRUE),
+                               labels = TRUE)
+
+NMDS_scree(zoop_FA_conc_diss)  # 4 dimensions looks good
+
+set.seed(5465)
+
+zoop_FA_conc_nMDS1 <- 
+  metaMDS(zoop_FA_conc_diss,
+          distance = "euclidean",
+          k = 4,
+          trymax = 250,
+          wascores = TRUE,
+          expand = TRUE,
+          autotransform = FALSE)
+
+# Shepards test/goodness of fit
+goodness(zoop_FA_conc_nMDS1)
+stressplot(zoop_FA_conc_nMDS1)
+
+zoop_FA_conc_data.scores <- as.data.frame(scores(zoop_FA_conc_nMDS1))
+zoop_FA_conc_data.scores2 <- cbind(zoop_FA_conc_data.scores,
+                              zoop_FA_conc_covariates)
+
+zoop_FA_conc_scores <- `sppscores<-`(zoop_FA_conc_nMDS1, zoop_FA_conc_matrix)
+
+zoop_FA_conc_variable_scores <- 
+  as.data.frame(zoop_FA_conc_scores$species)
+
+zoop_FA_conc_variable_scores$variable <- 
+  rownames(zoop_FA_conc_variable_scores)
+
+### Generate hulls ----
+
+zoop_FA_conc_data.scores2$MPconcentration <- 
+  as.factor(zoop_FA_conc_data.scores2$MPconcentration)
+
+zoop_FA_conc_data.scores2$date <- 
+  as.factor(zoop_FA_conc_data.scores2$date)
+
+zoop_FA_conc_hulls <- data.frame()
+
+for(i in 1:length(unique(zoop_FA_conc_data.scores2$MPconcentration))) {
+  hull <-
+    zoop_FA_conc_data.scores2[zoop_FA_conc_data.scores2$MPconcentration ==
+                           unique(zoop_FA_conc_data.scores2$MPconcentration)[i],
+    ][chull(zoop_FA_conc_data.scores2[zoop_FA_conc_data.scores2$MPconcentration ==
+                                   unique(zoop_FA_conc_data.scores2$MPconcentration)[i],
+                                 c(1:2)]),]
+  zoop_FA_conc_hulls <- rbind(zoop_FA_conc_hulls, hull)
+}
+
+### Plot ----
+
+png("Zooplankton FA Concentrations MDS Plot.png",
+    width = 19,
+    height= 12, 
+    units = "cm",
+    res = 600)
+
+ggplot() +
+  geom_polygon(data = zoop_FA_conc_hulls,
+               aes(x = NMDS1,
+                   y = NMDS2,
+                   fill = MPconcentration,
+                   colour = MPconcentration),
+               alpha = 0.75,
+               size = 0.5) +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed") +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed") +
+  geom_point(data = zoop_FA_conc_hulls,
+             aes(x = NMDS1,
+                 y = NMDS2,
+                 shape = date),
+             alpha = 0.75,
+             size = 3) +
+  geom_text(data = zoop_FA_variable_scores,
+            aes(x = MDS1, 
+                y = MDS2, 
+                label = variable,
+                angle = MDS1*MDS2*1000),
+            alpha = 0.9,
+            size = 8 / .pt,
+            colour = "purple") +
+  scale_colour_brewer(type = "div",
+                      palette = "RdYlGn",
+                      direction = -1,
+                      name = 
+                        expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+  scale_fill_brewer(type = "div",
+                    palette = "RdYlGn",
+                    direction = -1,
+                    name = 
+                      expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+  scale_shape(name = "Date") +
   theme1
 
 dev.off()
