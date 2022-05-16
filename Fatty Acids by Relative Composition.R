@@ -175,7 +175,7 @@ ggplot(FA_prop_long) +
               method = "lm") +
   facet_wrap(~metric, scales = "free_y", labeller = prop_labels, ncol = 3) +
   labs(x = "Sample Type",
-       y = "prop of Total Fatty Acids") +
+       y = "Proportion of Total Fatty Acids") +
   scale_colour_manual(values = c("orange", "purple", "blue"),
                       name = "") +
   scale_x_continuous(trans = "log1p",
@@ -307,16 +307,17 @@ dev.off()
 
 # Re-scale response so it sums to 1
 
-perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] 
+trimmed_FA <- 
+  data.frame(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] / 
+               rowSums(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)])) %>% 
+  select(where(function(x){mean(x) >= 0.01}))
 
-adjusted_Y <- 
-  DR_data(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] / 
-            rowSums(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]))
+DR_Y <- DR_data(trimmed_FA)
 
 # Run model
 
 perch_FA_dir_mod1 <-
-  DirichReg(adjusted_Y ~ scaled.body.weight + log(MPconcentration + 1)|
+  DirichReg(DR_Y ~ scaled.body.weight + scaled.MPconcentration|
               corral,
             model = "alternative",
             data = perch_FA_prop2)
@@ -361,7 +362,7 @@ perch_FA_dir_newpredict <- predict(perch_FA_dir_mod1,
                                    mu = TRUE, phi = FALSE)
 
 colnames(perch_FA_dir_newpredict) <- 
-  colnames(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)])
+  colnames(trimmed_FA)
 
 perch_FA_dir_newdata$MPconcentration <-
   (perch_FA_dir_newdata$scaled.MPconcentration * 
@@ -375,7 +376,7 @@ perch_FA_dir_newpredict <-
 
 perch_FA_dir_newpredict_long <- 
   perch_FA_dir_newpredict %>%
-    pivot_longer(names(perch_FA_dir_newpredict[c(25:59)]),
+    pivot_longer(names(perch_FA_dir_newpredict[c(25:39)]),
                names_to = "metric",
                values_to = "value")
 
@@ -385,8 +386,8 @@ perch_FA_dir_newpredict_long$metric <-
 # Put original data into long form
 
 perch_FA_prop_long <- 
-  perch_FA_prop2[,c(1:3,5,6:16,18:25,27:34,36:44,51:53)] %>%
-  pivot_longer(names(zoop_FA_prop[c(7:16,18:25,27:34,36:44)]),
+  trimmed_FA %>%
+  pivot_longer(names(trimmed_FA),
                names_to = "metric",
                values_to = "value")
 
@@ -396,8 +397,8 @@ perch_FA_prop_long$metric <- as.factor(perch_FA_prop_long$metric)
 #### Plot predictions ----
 
 png("Perch Dirichlet Plot.png",
-    width = 25,
-    height= 17, 
+    width = 29,
+    height= 15, 
     units = "cm",
     res = 600)
 
@@ -407,18 +408,22 @@ ggplot() +
                 y = value),
             colour = "red") +
   geom_point(data = perch_FA_prop_long,
-             aes(x = MPconcentration,
+             aes(x = perch_FA_dir_newpredict_long$MPconcentration,
                  y = value)) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = "Proportion Fatty Acid") +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  facet_wrap(~ metric, ncol = 5, scales = "free_y") +
+  facet_wrap(~ metric, ncol = 5) +
   theme1
 
 dev.off()
 
+### Explore different indicators ----
 
+#### PUFAs ----
+
+#### SFAs ----
 
 ## Zooplankton analyses ----
 
@@ -560,25 +565,22 @@ dev.off()
 
 ### Dirichlet regression ----
 
-# Subset endpoint data
-
-zoop_FA_prop_end <- subset(zoop_FA_prop, date > "2021-08-01" )
-
 # Re-scale response so it sums to 1
 
-zoop_FA_prop_end[,c(7:16,18:25,27:34,36:44)] 
+trimmed_zoop_FA <- 
+  data.frame(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)] / 
+               rowSums(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)])) %>% 
+  select(where(function(x){mean(x) >= 0.01}))
 
-adjusted_Y <- 
-  DR_data(zoop_FA_prop_end[,c(7:16,18:25,27:34,36:44)] / 
-            rowSums(zoop_FA_prop_end[,c(7:16,18:25,27:34,36:44)]))
+DR_zoop_Y <- DR_data(trimmed_zoop_FA)
 
 # Run model
 
 zoop_FA_dir_mod1 <-
-  DirichReg(adjusted_Y ~ log(MPconcentration + 1)|
-              log(MPconcentration + 1),
+  DirichReg(DR_zoop_Y ~ scaled.MPconcentration * scaled.date|
+              scaled.date,
             model = "alternative",
-            data = zoop_FA_prop_end)
+            data = zoop_FA_prop)
 
 zoop_FA_dir_mod1
 summary(zoop_FA_dir_mod1)
@@ -588,14 +590,14 @@ summary(zoop_FA_dir_mod1)
 zoop_FA_dir_predict1 <- predict(zoop_FA_dir_mod1, mu = TRUE, phi = FALSE)
 
 zoop_FA_prop_end_predict <- 
-  cbind(zoop_FA_prop_end[,c(1:6,51:54)],
+  cbind(zoop_FA_prop[,c(1:6,51:54)],
         zoop_FA_dir_predict1)
 
 # Put predictions into long form
 
 zoop_FA_prop_end_predict_long <- 
   zoop_FA_prop_end_predict %>%
-  pivot_longer(names(zoop_FA_prop_end_predict[c(11:45)]),
+  pivot_longer(names(trimmed_zoop_FA),
                names_to = "metric",
                values_to = "value")
 
@@ -605,21 +607,18 @@ zoop_FA_prop_end_predict_long$metric <-
 # Put original data into long form
 
 zoop_FA_prop_long <- 
-  zoop_FA_prop[,c(1:3,5,6:16,18:25,27:34,36:44,51:54)] %>%
-  pivot_longer(names(zoop_FA_prop[c(7:16,18:25,27:34,36:44)]),
+  trimmed_zoop_FA %>%
+  pivot_longer(names(trimmed_zoop_FA),
                names_to = "metric",
                values_to = "value")
 
 zoop_FA_prop_long$metric <- as.factor(zoop_FA_prop_long$metric)
 
-zoop_FA_prop_long_end <- 
-  subset(zoop_FA_prop_long, date > "2021-08-01" )
-
 #### Plot predictions ----
 
 png("Zooplankton Dirichlet Plot.png",
-    width = 25,
-    height= 17, 
+    width = 19,
+    height= 15, 
     units = "cm",
     res = 600)
 
@@ -629,14 +628,14 @@ ggplot() +
             aes(x = MPconcentration,
                 y = value),
             colour = "red") +
-  geom_point(data = zoop_FA_prop_long_end,
-             aes(x = MPconcentration,
+  geom_point(data = zoop_FA_prop_long,
+             aes(x = zoop_FA_prop_end_predict_long$MPconcentration,
                  y = value)) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = "Proportion Fatty Acid") +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  facet_wrap(~ metric, ncol = 5, scales = "free_y") +
+  facet_wrap(~ metric, ncol = 5) +
   theme1
 
 dev.off()

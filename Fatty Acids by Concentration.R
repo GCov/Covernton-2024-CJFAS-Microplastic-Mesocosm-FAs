@@ -514,7 +514,7 @@ perchDHA.ARAmod1 <- glmmTMB(value ~
                           (1 | corral),
                           data = subset(perch_FA_long, metric == "DHA.ARA"))
 
-plotResiduals(simulateResiduals(perchDHA.ARAmod1))
+plot(simulateResiduals(perchDHA.ARAmod1))
 
 summary(perchDHA.ARAmod1)  # weak effect
 
@@ -552,7 +552,7 @@ perchn3.n6mod1 <- glmmTMB(value ~
                             (1 | corral),
                             data = subset(perch_FA_long, metric == "n3.n6"))
 
-plotResiduals(simulateResiduals(perchn3.n6mod1))
+plot(simulateResiduals(perchn3.n6mod1))
 
 summary(perchn3.n6mod1)  # no effect
 
@@ -577,7 +577,7 @@ perchOA.PAmod1 <- glmmTMB(value ~
                             (1 | corral),
                           data = subset(perch_FA_long, metric == "OA.PA"))
 
-plotResiduals(simulateResiduals(perchOA.PAmod1))
+plot(simulateResiduals(perchOA.PAmod1))
 
 summary(perchOA.PAmod1)  # no effect
 
