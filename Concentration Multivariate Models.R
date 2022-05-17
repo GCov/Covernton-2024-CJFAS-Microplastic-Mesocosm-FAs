@@ -12,6 +12,7 @@ library(coda)
 library(lattice)
 library(ggridges)
 library(reshape2)
+library(Hmsc)
 
 extract.post <- function(x){
   out <- data.frame(x$BUGSoutput$sims.list)
@@ -168,8 +169,7 @@ perchFAmodinit <- function()
 
 ## Keep track of parameters ####
 
-perchFAmodparam <- c("intercept",
-                     "beta.weight",
+perchFAmodparam <- c("beta.weight",
                      "beta.conc")
 
 ## Specify data for model ####
@@ -180,7 +180,7 @@ perchFAmoddata <-
     p = ncol(Y_perch_FA),
     weight = X_perch_FA$scaled.body.weight,
     conc = X_perch_FA$scaled.MPconcentration,
-    y = Y_perch_FA,
+    y = log(Y_perch_FA + 1),
     n.ranefID = max(ranef_ids_perch_FA),
     ranef.ids = ranef_ids_perch_FA
   )
@@ -211,14 +211,16 @@ perchFAmodrun1_post <- extract.post(perchFAmodrun1)
 
 perchFAmodrun1_post_summary <- summarize.post(perchFAmodrun1_post)
   
-perchFAmodrun1_post_summary$FA <- rep(FA.names, times = 3)
+perchFAmodrun1_post_summary$FA <- rep(FA.names, 
+                                      times = length(perchFAmodparam))
+
+## Plot parameter posterior estimates ----
 
 perchFAmodrun1_post_summary$coefficient <- 
   c(rep("MP Concentration", times = 35),
-    rep("Body Weight", times = 35),
-    rep("Intercept", times = 35))
+    rep("Body Weight", times = 35))
 
-png("Perch Multivariate GLMM Plot.png",
+png("Perch Multivariate GLMM Parameter Posteriors Plot.png",
     width = 19,
     height= 20, 
     units = "cm",
@@ -236,14 +238,133 @@ ggplot(perchFAmodrun1_post_summary) +
                      y = coefficient),
                  colour = "red",
                  size = 0.5) +
-  labs(x = "Estimate",
+  labs(x = "Parameter Estimate",
        y = "Variable") +
   facet_wrap(~FA,
-             ncol = 5) +
-  theme1 +
-  theme(axis.text.x = element_text(angle = 20,
-                                   hjust = 1))
+             ncol = 5,
+             scales = "free_x") +
+  theme1
   
+
+dev.off()
+
+## Predict from model ----
+
+perch_FA_conc_new <- perch_FA2[,c(1:6, 51:62)]
+
+perch_FA_conc_new$scaled.body.weight <- 
+  mean(perch_FA_conc_new$scaled.body.weight)
+
+# Pull out all necessary terms
+
+perchFAmodparam2 <- c("beta.weight",
+                     "beta.conc",
+                     "intercept")
+
+perchFAmodrun2 <-  # rerun model
+  jags.parallel(
+    data = perchFAmoddata,
+    inits = perchFAmodinit,
+    parameters.to.save = perchFAmodparam2,
+    n.chains = 3,
+    n.cluster = 16,
+    n.iter = 5000,
+    n.burnin = 1000,
+    n.thin = 4,
+    jags.seed = 46956,
+    model = perchFAmod
+  )
+
+perch_FA_conc_predictions <- list(mean = data.frame(),
+                                  upper = data.frame(),
+                                  lower = data.frame())
+
+# Use posteriors to predict
+
+for(i in 1:nrow(perch_FA_conc_new)) {
+  for(j in 1:ncol(Y_perch_FA)){
+  eta <- 
+    perchFAmodrun2$BUGSoutput$sims.list$intercept[,j] +
+    perchFAmodrun2$BUGSoutput$sims.list$beta.weight[,j] * 
+    perch_FA_conc_new$scaled.body.weight[i] +
+    perchFAmodrun2$BUGSoutput$sims.list$beta.conc[,j] * 
+    perch_FA_conc_new$scaled.MPconcentration[i]
+  perch_FA_conc_predictions$mean[i, j] <- exp(mean(eta)) - 1
+  perch_FA_conc_predictions$upper[i, j] <- exp(quantile(eta, 0.975)) - 1
+  perch_FA_conc_predictions$lower[i, j] <- exp(quantile(eta, 0.025)) - 1
+}
+}
+
+# rename columns
+
+colnames(perch_FA_conc_predictions$mean) <- colnames(Y_perch_FA)
+colnames(perch_FA_conc_predictions$upper) <- colnames(Y_perch_FA)
+colnames(perch_FA_conc_predictions$lower) <- colnames(Y_perch_FA)
+
+# bind everything together
+
+perch_FA_conc_new <- cbind(perch_FA_conc_new, perch_FA_conc_predictions$mean)
+  
+perch_FA_conc_new_long <- 
+  perch_FA_conc_new %>%
+  pivot_longer(colnames(Y_perch_FA),
+               names_to = "FA",
+               values_to = "Mean")
+
+perch_FA_conc_multi_upper <-
+  perch_FA_conc_predictions$upper %>% 
+  pivot_longer(colnames(Y_perch_FA),
+               names_to = "FA",
+               values_to = "Upper")
+
+perch_FA_conc_multi_lower <-
+  perch_FA_conc_predictions$lower %>% 
+  pivot_longer(colnames(Y_perch_FA),
+               names_to = "FA",
+               values_to = "Lower")
+
+perch_FA_conc_new_long <- 
+  cbind(perch_FA_conc_new_long, perch_FA_conc_multi_upper[,2])
+
+perch_FA_conc_new_long <- 
+  cbind(perch_FA_conc_new_long, perch_FA_conc_multi_lower[,2])
+
+# Put original data into long form
+
+perch_FA2_long <- 
+  perch_FA2 %>%
+  pivot_longer(colnames(Y_perch_FA),
+               names_to = "FA",
+               values_to = "Value")
+
+## Plot predictions ----
+
+png("Perch Multivariate GLMM Predictions Plot.png",
+    width = 19,
+    height= 19, 
+    units = "cm",
+    res = 600)
+
+ggplot() +
+  geom_ribbon(data = perch_FA_conc_new_long,
+              aes(x = MPconcentration,
+                  ymin = Lower,
+                  ymax = Upper),
+              fill = "red",
+              alpha = 0.3) +
+  geom_line(data = perch_FA_conc_new_long,
+            aes(x = MPconcentration,
+                y = Mean),
+            colour = "red") +
+  geom_point(data = perch_FA2_long,
+             aes(x = MPconcentration,
+                 y = Value)) +
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
+       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
+  facet_wrap(~ FA, ncol = 5) +
+  theme1
 
 dev.off()
 
@@ -252,31 +373,31 @@ dev.off()
 
 ## Specify data ----
 
-perch_FA_prop_predictors <- 
-  perch_FA_prop2[,c(51,54,64)]  # pull out predictors
+perch_FA_conc_predictors <- 
+  perch_FA2[,c(51,54)]  # pull out predictors
 
-perch_FA_prop_RE <- data.frame(corral = factor(perch_FA_prop2[,2]))
-perch_FA_prop_rlevels <- HmscRandomLevel(units = perch_FA_prop_RE$corral)
+perch_FA_conc_RE <- data.frame(corral = factor(perch_FA2[,2]))
+perch_FA_conc_rlevels <- HmscRandomLevel(units = perch_FA_conc_RE$corral)
 
-perch_FA_prop_response <- 
-  perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
+perch_FA_conc_response <- 
+  perch_FA2[,c(7:16,18:25,27:34,36:44)]  # pull out FA proportions
 
 ## Specify model structure ----
 
 model1 <- 
-  Hmsc(Y = perch_FA_prop_response,  # response data
-       XData = perch_FA_prop_predictors,  # covariates
-       XFormula = ~ body.weight + MPconcentration + date2,  # model formula
+  Hmsc(Y = perch_FA_conc_response,  # response data
+       XData = perch_FA_conc_predictors,  # covariates
+       XFormula = ~ body.weight + MPconcentration,  # model formula
        XScale = TRUE,  # scale covariates for fixed effects,
-       studyDesign = perch_FA_prop_RE,
-       ranLevels = list(corral = perch_FA_prop_rlevels),
+       studyDesign = perch_FA_conc_RE,
+       ranLevels = list(corral = perch_FA_conc_rlevels),
        distr = "normal")
 
 ## Run MCMC chains ----
 
 set.seed(6461)
 
-perch_FA_prop_run1 <- sampleMcmc(model1,
+perch_FA_conc_run1 <- sampleMcmc(model1,
                                  thin = 1,
                                  samples = 2000,
                                  transient = 100,
@@ -286,36 +407,36 @@ perch_FA_prop_run1 <- sampleMcmc(model1,
 
 ## Check convergence ----
 
-perch_FA_prop_post1 <- convertToCodaObject(perch_FA_prop_run1)
+perch_FA_conc_post1 <- convertToCodaObject(perch_FA_prop_run1)
 
-effectiveSize(perch_FA_prop_post1$Beta)
-gelman.diag(perch_FA_prop_post1$Beta, 
+effectiveSize(perch_FA_conc_post1$Beta)
+gelman.diag(perch_FA_conc_post1$Beta, 
             transform = TRUE,
             multivariate = FALSE)$psrf
 
-plot(perch_FA_prop_post1$Beta)
+plot(perch_FA_conc_post1perch_FA_prop_post1$Beta)
 
 
 ## Assess explanatory power ----
 
-perch_FA_prop_pred1 <- computePredictedValues(perch_FA_prop_run1)
-evaluateModelFit(hM = perch_FA_prop_run1, predY = perch_FA_prop_pred1)
+perch_FA_conc_pred1 <- computePredictedValues(perch_FA_conc_run1)
+evaluateModelFit(hM = perch_FA_conc_run1, predY = perch_FA_conc_pred1)
 
 
 ## Cross validation ----
 
-partition1 <- createPartition(perch_FA_prop_run1, nfolds = 2)
-perch_FA_prop_pred1.1 <- 
-  computePredictedValues(perch_FA_prop_run1, partition = partition1)
+partition1 <- createPartition(perch_FA_conc_run1, nfolds = 2)
+perch_FA_conc_pred1.1 <- 
+  computePredictedValues(perch_FA_conc_run1, partition = partition1)
 
-evaluateModelFit(hM = perch_FA_prop_run1, 
-                 predY = perch_FA_prop_pred1.1)
+evaluateModelFit(hM = perch_FA_conc_run1, 
+                 predY = perch_FA_conc_pred1.1)
 
 ## Look at slope estimates ----
 
-perch_FA_prop_postBeta <- 
-  getPostEstimate(perch_FA_prop_run1, parName = "Beta")
-plotBeta(perch_FA_prop_run1, post = perch_FA_prop_postBeta, 
+perch_FA_conc_postBeta <- 
+  getPostEstimate(perch_FA_conc_run1, parName = "Beta")
+plotBeta(perch_FA_conc_run1, post = perch_FA_conc_postBeta, 
          param = "Support", supportLevel = 0.95)
 
 # Zooplankton HMSC model----
