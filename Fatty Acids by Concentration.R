@@ -6,6 +6,15 @@ library(DHARMa)
 library(dplyr)
 library(MuMIn)
 library(tidyr)
+library(vegan)
+library(ggbiplot)
+
+FA.names <- c("12:0", "13:0", "14:0", "15:0", "16:0", "17:0", "18:0", "20:0", 
+              "22:0", "24:0", "12:1", "14:1", "16:1n-7", "16:1n-9", "18:1n-7",
+              "18:1n-9", "20:1n-9", "22:1n-9", "18:2n-6", "18:3n-6", "20:2n-6",
+              "20:3n-6", "20:4n-6", "22:2n-6", "22:4n-6", "22:5n-6", "18:3n-3",
+              "18:4n-3", "20:3n-3", "20:4n-3", "20:5n-3", "22:5n-3", "22:6n-3",
+              "24:5n-3", "24:6n-3")
 
 # Load data ----
 
@@ -131,9 +140,15 @@ plot(total_FAs ~ YP.end, data = perch_FA2)
 
 # Perch Analysis----
 
-## Total FAs ----
+# Scale predictors
 
-# Convert date to a centered numeric value
+perch_FA2$scaled.MPconcentration <-
+  as.numeric(scale(perch_FA2$MPconcentration, center = TRUE))
+
+perch_FA2$scaled.body.weight <-
+  as.numeric(scale(perch_FA2$body.weight, center = TRUE))
+
+## Total FAs ----
 
 perchFAmod1 <- glmmTMB(total_FAs ~ 
                          log(MPconcentration + 1) +
@@ -198,6 +213,26 @@ ggplot() +
   theme1
 
 dev.off()
+
+## PUFAs and SFAs ----
+
+perchPUFAmod1 <- glmmTMB(PUFAs ~ 
+                           log(MPconcentration + 1) + body.weight +
+                           (1 | corral),
+                         data = perch_FA2)
+
+plot(simulateResiduals(perchPUFAmod1))
+
+summary(perchPUFAmod1)
+
+perchSFAmod1 <- glmmTMB(total_SFAs ~ 
+                           log(MPconcentration + 1) + body.weight +
+                           (1 | corral),
+                         data = perch_FA2)
+
+plot(simulateResiduals(perchSFAmod1))
+
+summary(perchSFAmod1)
 
 ## Individual FAs -----
 
@@ -627,9 +662,7 @@ ggplot(perch_FA_long) +
 
 dev.off()
 
-## nMDS ----
-
-### Run model ----
+## PCA ----
 
 # Pull out covariates
 
@@ -643,20 +676,91 @@ summary(perch_FA_conc_totals)
 
 perch_FA_conc_matrix <- perch_FA2[,c(7:16,18:25,27:34,36:44)]
 
+### Run PCA ----
+perch_FA_conc_pca <- rda(perch_FA_conc_matrix,
+                         scale. = FALSE)
+
+# Bar plot of relative eigenvalues
+barplot(as.vector(perch_FA_conc_pca$CA$eig)/sum(perch_FA_conc_pca$CA$eig))
+
+# Calculate percentage of variance explained by first 2 aaxes
+sum((as.vector(perch_FA_conc_pca$CA$eig)/sum(perch_FA_conc_pca$CA$eig))[1:2])
+
+summary(perch_FA_conc_pca)
+
+# 'Site' scores
+perch_FA_conc_PCA_site <- perch_FA_conc_pca$CA$u
+
+# 'Species' scores
+perch_FA_conc_PCA_species <- data.frame(perch_FA_conc_pca$CA$v)
+perch_FA_conc_PCA_species$FA <- FA.names
+
+perch_FA_conc_PCA_site <- cbind(perch_FA_conc_covariates,
+                                perch_FA_conc_PCA_site[, 1:2])
+
+### Plot ----
+
+png("Perch FA Concentrations PCA.png",
+    width = 19,
+    height= 14, 
+    units = "cm",
+    res = 600)
+
+ggplot() +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed") +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed") +
+  geom_segment(data = perch_FA_conc_PCA_species,
+               aes(x = 0, y = 0, xend = PC1*0.9, yend = PC2*0.9),
+               arrow = arrow(type = "closed",
+                             length = unit(0.2, "cm")),
+               colour = "purple",
+               alpha = 0.5) +
+  geom_point(data = perch_FA_conc_PCA_site,
+             aes(x = PC1,
+                 y = PC2,
+                 colour = as.factor(MPconcentration)),
+             size = 4,
+             alpha = 0.75) +
+  geom_text(data = perch_FA_conc_PCA_species,
+            aes(x = PC1, 
+                y = PC2, 
+                label = FA),
+            alpha = 0.5,
+            size = 3,
+            colour = "purple") +
+  scale_colour_brewer(type = "div",
+                      palette = "RdYlGn",
+                      name = 
+                        expression(paste("Exposure Concentration (MPs"~L^-1*")")),
+                      direction = -1) +
+  labs(x = "PC1",
+       y = "PC2") +
+  theme1
+
+dev.off()
+
+
+
+## nMDS ----
+
+### Run model ----
+
 # Calculate distance matrix
 perch_FA_conc_diss <- as.matrix(vegdist(perch_FA_conc_matrix,
-                                        method = "jaccard",
+                                        method = "bray",
                                         na.rm = TRUE),
                                 labels = TRUE)
 
-NMDS_scree(perch_FA_conc_diss)  # 3 dimensions looks good
+NMDS_scree(perch_FA_conc_diss)  # 4 dimensions looks good
 
 set.seed(5465)
 
 perch_FA_conc_nMDS1 <- 
   metaMDS(perch_FA_conc_diss,
-          distance = "euclidean",
-          k = 3,
+          distance = "bray",
+          k = 4,
           trymax = 250,
           wascores = TRUE,
           expand = TRUE,
@@ -676,8 +780,7 @@ perch_FA_conc_scores <- `sppscores<-`(perch_FA_conc_nMDS1,
 perch_FA_conc_variable_scores <- 
   as.data.frame(perch_FA_conc_scores$species)
 
-perch_FA_conc_variable_scores$variable <- 
-  rownames(perch_FA_conc_variable_scores)
+perch_FA_conc_variable_scores$FA <- FA.names
 
 ### Generate hulls ----
 
@@ -712,32 +815,39 @@ ggplot() +
                    y = NMDS2,
                    fill = MPconcentration,
                    colour = MPconcentration),
-               alpha = 0.75,
+               alpha = 0.3,
                size = 0.5) +
+  geom_segment(data = perch_FA_conc_variable_scores,
+               aes(x = 0, y = 0, xend = MDS1*0.9, yend = MDS2*0.9),
+               arrow = arrow(type = "closed",
+                             length = unit(0.2, "cm")),
+               colour = "purple",
+               alpha = 0.5) +
   geom_hline(aes(yintercept = 0),
              linetype = "dashed") +
   geom_vline(aes(xintercept = 0),
              linetype = "dashed") +
-  geom_label(data = perch_FA_conc_hulls,
+  geom_point(data = perch_FA_conc_hulls,
              aes(x = NMDS1,
                  y = NMDS2,
-                 label = ID),
+                 colour = MPconcentration),
              size = 4,
-             alpha = 0.3) +
+             alpha = 0.5) +
   geom_text(data = perch_FA_conc_variable_scores,
             aes(x = MDS1, 
                 y = MDS2, 
-                label = variable,
-                angle = MDS1*MDS2*1000),
+                label = FA),
             alpha = 0.9,
             size = 3,
             colour = "purple") +
   scale_fill_brewer(type = "div",
                     palette = "RdYlGn",
+                    direction = -1,
                     name = 
                       expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   scale_colour_brewer(type = "div",
                       palette = "RdYlGn",
+                      direction = -1,
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   theme1
@@ -1111,21 +1221,92 @@ ggplot(zoop_FA) +
 
 dev.off()
 
-## nMDS ----
+## PCA ----
 
 # Pull out covariates
 
-zoop_FA_conc_covariates <- zoop_FA[,c(1:3,51)]
+zoop_FA_conc_covariates <- zoop_FA[,c(1:3,51,52),]
 
 zoop_FA_conc_totals <- zoop_FA[,c(17,26,35,45)]
+
+summary(zoop_FA_conc_totals)
 
 # Pull out fatty acid composition matrix
 
 zoop_FA_conc_matrix <- zoop_FA[,c(7:16,18:25,27:34,36:44)]
 
+### Run PCA ----
+zoop_FA_conc_pca <- rda(zoop_FA_conc_matrix,
+                         scale. = FALSE)
+
+# Bar plot of relative eigenvalues
+barplot(as.vector(zoop_FA_conc_pca$CA$eig)/sum(zoop_FA_conc_pca$CA$eig))
+
+# Calculate percentage of variance explained by first 2 aaxes
+sum((as.vector(zoop_FA_conc_pca$CA$eig)/sum(zoop_FA_conc_pca$CA$eig))[1:2])
+
+summary(zoop_FA_conc_pca)
+
+# 'Site' scores
+zoop_FA_conc_PCA_site <- zoop_FA_conc_pca$CA$u
+
+# 'Species' scores
+zoop_FA_conc_PCA_species <- data.frame(zoop_FA_conc_pca$CA$v)
+zoop_FA_conc_PCA_species$FA <- FA.names
+
+zoop_FA_conc_PCA_site <- cbind(zoop_FA_conc_covariates,
+                                zoop_FA_conc_PCA_site[, 1:2])
+
+### Plot ----
+
+png("Zooplankton FA Concentrations PCA.png",
+    width = 19,
+    height= 14, 
+    units = "cm",
+    res = 600)
+
+ggplot() +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed") +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed") +
+  geom_segment(data = zoop_FA_conc_PCA_species,
+               aes(x = 0, y = 0, xend = PC1*0.9, yend = PC2*0.9),
+               arrow = arrow(type = "closed",
+                             length = unit(0.2, "cm")),
+               colour = "purple",
+               alpha = 0.5) +
+  geom_point(data = zoop_FA_conc_PCA_site,
+             aes(x = PC1,
+                 y = PC2,
+                 colour = as.factor(MPconcentration),
+                 shape = as.factor(date)),
+             size = 4,
+             alpha = 0.75) +
+  geom_text(data = zoop_FA_conc_PCA_species,
+            aes(x = PC1, 
+                y = PC2, 
+                label = FA),
+            alpha = 0.5,
+            size = 3,
+            colour = "purple") +
+  scale_colour_brewer(type = "div",
+                      palette = "RdYlGn",
+                      name = 
+                        expression(paste("Exposure Concentration (MPs"~L^-1*")")),
+                      direction = -1) +
+  scale_shape(name = "Date") +
+  labs(x = "PC1",
+       y = "PC2") +
+  theme1
+
+dev.off()
+
+## nMDS ----
+
 # Calculate distance matrix
 zoop_FA_conc_diss <- as.matrix(vegdist(zoop_FA_conc_matrix, 
-                                       method = "jaccard",
+                                       method = "bray",
                                        na.rm = TRUE),
                                labels = TRUE)
 
@@ -1135,7 +1316,7 @@ set.seed(5465)
 
 zoop_FA_conc_nMDS1 <- 
   metaMDS(zoop_FA_conc_diss,
-          distance = "euclidean",
+          distance = "bray",
           k = 4,
           trymax = 250,
           wascores = TRUE,
@@ -1155,8 +1336,7 @@ zoop_FA_conc_scores <- `sppscores<-`(zoop_FA_conc_nMDS1, zoop_FA_conc_matrix)
 zoop_FA_conc_variable_scores <- 
   as.data.frame(zoop_FA_conc_scores$species)
 
-zoop_FA_conc_variable_scores$variable <- 
-  rownames(zoop_FA_conc_variable_scores)
+zoop_FA_conc_variable_scores$FA <- FA.names
 
 ### Generate hulls ----
 
@@ -1192,8 +1372,14 @@ ggplot() +
                    y = NMDS2,
                    fill = MPconcentration,
                    colour = MPconcentration),
-               alpha = 0.75,
+               alpha = 0.3,
                size = 0.5) +
+  geom_segment(data = zoop_FA_conc_variable_scores,
+               aes(x = 0, y = 0, xend = MDS1*0.9, yend = MDS2*0.9),
+               arrow = arrow(type = "closed",
+                             length = unit(0.2, "cm")),
+               colour = "purple",
+               alpha = 0.5) +
   geom_hline(aes(yintercept = 0),
              linetype = "dashed") +
   geom_vline(aes(xintercept = 0),
@@ -1201,14 +1387,14 @@ ggplot() +
   geom_point(data = zoop_FA_conc_hulls,
              aes(x = NMDS1,
                  y = NMDS2,
-                 shape = date),
-             alpha = 0.75,
+                 shape = date,
+                 colour = MPconcentration),
+             alpha = 0.5,
              size = 3) +
-  geom_text(data = zoop_FA_variable_scores,
+  geom_text(data = zoop_FA_conc_variable_scores,
             aes(x = MDS1, 
                 y = MDS2, 
-                label = variable,
-                angle = MDS1*MDS2*1000),
+                label = FA),
             alpha = 0.9,
             size = 8 / .pt,
             colour = "purple") +
@@ -1231,7 +1417,7 @@ dev.off()
 
 # Fish food ----
 
-png("Fish Food Essential FAs Plot.png",
+png("Fish Food Essential FAs Concentrations Plot.png",
     width = 9,
     height= 9, 
     units = "cm",
@@ -1272,3 +1458,4 @@ ggplot(food_FA) +
         legend.position = "top")
 
 dev.off()
+
