@@ -191,9 +191,9 @@ dev.off()
 
 ## Perch analyses ----
 
-## PCA ----
+### PCA ----
 
-# Pull out covariates
+#### Pull out covariates ----
 
 perch_FA_prop_covariates <- perch_FA_prop2[,c(1:3,51:67),]
 
@@ -201,11 +201,11 @@ perch_FA_prop_totals <- perch_FA_prop2[,c(17,26,35,45)]
 
 summary(perch_FA_prop_totals)
 
-# Pull out fatty acid composition matrix
+#### Pull out fatty acid composition matrix ----
 
 perch_FA_prop_matrix <- perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]
 
-### Run PCA ----
+#### Run PCA ----
 perch_FA_prop_pca <- rda(perch_FA_prop_matrix,
                          scale. = FALSE)
 
@@ -227,7 +227,7 @@ perch_FA_prop_PCA_species$FA <- FA.names
 perch_FA_prop_PCA_site <- cbind(perch_FA_prop_covariates,
                                 perch_FA_prop_PCA_site[, 1:2])
 
-### Plot ----
+#### Plot ----
 
 png("Perch FA Proportions PCA.png",
     width = 19,
@@ -273,10 +273,18 @@ dev.off()
 
 ### nMDS ----
 
-# Pull out covariates
+# Remove any FAs that contribute less than 0.01% and re-scale response so it 
+# sums to 1
+
+trimmed_perch_FA <- 
+  data.frame(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] %>% 
+               select(where(function(x){mean(x) >= 0.01})))
+
+trimmed_perch_FA <- 
+  trimmed_perch_FA / rowSums(trimmed_perch_FA)
 
 # Calculate distance matrix
-perch_FA_prop_diss <- as.matrix(vegdist(perch_FA_prop_matrix, 
+perch_FA_prop_diss <- as.matrix(vegdist(trimmed_perch_FA, 
                                    method = "bray", 
                                    na.rm = TRUE), 
                            labels = TRUE)
@@ -298,17 +306,19 @@ perch_FA_prop_nMDS1 <-
 goodness(perch_FA_prop_nMDS1)
 stressplot(perch_FA_prop_nMDS1)
 
-perch_FA_prop_data.scores <- as.data.frame(scores(perch_FA_prop_nMDS1))
-perch_FA_prop_data.scores2 <- cbind(perch_FA_prop_data.scores,
-                               perch_FA_prop_covariates)
-
 perch_FA_prop_scores <- `sppscores<-`(perch_FA_prop_nMDS1, 
-                                      perch_FA_prop_matrix)
+                                      trimmed_perch_FA)
+
+perch_FA_prop_data.scores <- as.data.frame(perch_FA_prop_scores$points)
+
+perch_FA_prop_data.scores2 <- cbind(perch_FA_prop_data.scores,
+                                    perch_FA_prop_covariates)
 
 perch_FA_prop_variable_scores <- 
   as.data.frame(perch_FA_prop_scores$species)
 
-perch_FA_prop_variable_scores$FA <- FA.names
+perch_FA_prop_variable_scores$FA <- 
+  FA.names[c(3,5,7,13,15,16,19,23,26:28,31:33)]
 
 #### Generate hulls ----
 
@@ -380,15 +390,22 @@ ggplot() +
 
 dev.off()
 
+### PERMANOVA ####
+
+perch.permanova <- 
+  adonis2(perch_FA_prop_diss ~ log(MPconcentration + 1) + body.weight,
+          permutations = 999,
+          data = perch_FA_prop_covariates,
+          method = "bray",
+          parallel = 8,
+          strata = perch_FA_prop_covariates$corral)
+
+perch.permanova  
+
+# No significant effect of MP concentration or body weight
+
 
 ### Dirichlet regression ----
-
-# Re-scale response so it sums to 1
-
-trimmed_FA <- 
-  data.frame(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] / 
-               rowSums(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)])) %>% 
-  select(where(function(x){mean(x) >= 0.01}))
 
 DR_Y <- DR_data(trimmed_FA)
 
@@ -755,9 +772,9 @@ dev.off()
 
 ## Zooplankton analyses ----
 
-## PCA ----
+### PCA ----
 
-# Pull out covariates
+#### Pull out covariates ----
 
 zoop_FA_prop_covariates <- zoop_FA_prop[,c(1:3,51:54),]
 
@@ -767,9 +784,9 @@ summary(zoop_FA_prop_totals)
 
 # Pull out fatty acid composition matrix
 
-zoop_FA_prop_matrix <- zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]
+zoop_FA_prop_matrix <- as.matrix(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)])
 
-### Run PCA ----
+#### Run PCA ----
 zoop_FA_prop_pca <- rda(zoop_FA_prop_matrix,
                         scale. = FALSE)
 
@@ -791,7 +808,7 @@ zoop_FA_prop_PCA_species$FA <- FA.names
 zoop_FA_prop_PCA_site <- cbind(zoop_FA_prop_covariates,
                                zoop_FA_prop_PCA_site[, 1:2])
 
-### Plot ----
+#### Plot ----
 
 png("Zooplankton FA Proportions PCA.png",
     width = 19,
@@ -838,8 +855,17 @@ dev.off()
 
 ### nMDS ----
 
+# Remove any FAs that contribute less than 0.01% and re-scale response so it 
+# sums to 1
+
+trimmed_zoop_FA <- 
+  data.frame(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]) %>% 
+  select(where(function(x){mean(x) >= 0.01}))
+
+trimmed_zoop_FA <- trimmed_zoop_FA/rowSums(trimmed_zoop_FA)
+
 # Calculate distance matrix
-zoop_FA_prop_diss <- as.matrix(vegdist(zoop_FA_prop_matrix, 
+zoop_FA_prop_diss <- as.matrix(vegdist(trimmed_zoop_FA, 
                                   method = "bray", 
                                   na.rm = TRUE), 
                           labels = TRUE)
@@ -861,16 +887,17 @@ zoop_FA_prop_nMDS1 <-
 goodness(zoop_FA_prop_nMDS1)
 stressplot(zoop_FA_prop_nMDS1)
 
-zoop_FA_prop_data.scores <- as.data.frame(scores(zoop_FA_prop_nMDS1))
-zoop_FA_prop_data.scores2 <- cbind(zoop_FA_prop_data.scores,
-                              zoop_FA_prop_covariates)
+zoop_FA_prop_scores <- `sppscores<-`(zoop_FA_prop_nMDS1, trimmed_zoop_FA)
 
-zoop_FA_prop_scores <- `sppscores<-`(zoop_FA_prop_nMDS1, zoop_FA_prop_matrix)
+zoop_FA_prop_data.scores <- as.data.frame(zoop_FA_prop_scores$points)
+
+zoop_FA_prop_data.scores2 <- cbind(zoop_FA_prop_data.scores,
+                                   zoop_FA_prop_covariates)
 
 zoop_FA_variable_prop_scores <- 
   as.data.frame(zoop_FA_prop_scores$species)
 
-zoop_FA_variable_prop_scores$FA <- FA.names
+zoop_FA_variable_prop_scores$FA <- FA.names[c(3,5,7,13,15,16,18,19,20,23,26:28,31,33)]
 
 #### Generate hulls ----
 
@@ -882,17 +909,17 @@ zoop_FA_prop_data.scores2$date <-
 
 zoop_FA_prop_hulls <- data.frame()
 
-for(i in 1:length(unique(zoop_FA_prop_data.scores2$MPconcentration))) {
+for(i in 1:length(unique(zoop_FA_prop_data.scores2$date))) {
   hull <-
-    zoop_FA_prop_data.scores2[zoop_FA_prop_data.scores2$MPconcentration ==
-                           unique(zoop_FA_prop_data.scores2$MPconcentration)[i],
-    ][chull(zoop_FA_prop_data.scores2[zoop_FA_prop_data.scores2$MPconcentration ==
-                                   unique(zoop_FA_prop_data.scores2$MPconcentration)[i],
+    zoop_FA_prop_data.scores2[zoop_FA_prop_data.scores2$date ==
+                           unique(zoop_FA_prop_data.scores2$date)[i],
+    ][chull(zoop_FA_prop_data.scores2[zoop_FA_prop_data.scores2$date ==
+                                   unique(zoop_FA_prop_data.scores2$date)[i],
                                  c(1:2)]),]
   zoop_FA_prop_hulls <- rbind(zoop_FA_prop_hulls, hull)
 }
 
-### Plot ----
+#### Plot ----
 
 png("Zooplankton Proportions MDS Plot.png",
     width = 19,
@@ -902,10 +929,10 @@ png("Zooplankton Proportions MDS Plot.png",
 
 ggplot() +
   geom_polygon(data = zoop_FA_prop_hulls,
-               aes(x = NMDS1,
-                   y = NMDS2,
-                   fill = MPconcentration,
-                   colour = MPconcentration),
+               aes(x = MDS1,
+                   y = MDS2,
+                   fill = date),
+               colour = "black",
                alpha = 0.3,
                size = 0.5) +
   geom_segment(data = zoop_FA_prop_variable_scores,
@@ -919,11 +946,11 @@ ggplot() +
   geom_vline(aes(xintercept = 0),
              linetype = "dashed") +
   geom_point(data = zoop_FA_prop_hulls,
-             aes(x = NMDS1,
-                 y = NMDS2,
+             aes(x = MDS1,
+                 y = MDS2,
                  shape = date,
                  colour = MPconcentration),
-             alpha = 0.5,)
+             alpha = 0.75,
              size = 3) +
   geom_text(data = zoop_FA_variable_prop_scores,
             aes(x = MDS1, 
@@ -937,15 +964,26 @@ ggplot() +
                       direction = -1,
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
-  scale_fill_brewer(type = "div",
-                    palette = "RdYlGn",
+  scale_fill_brewer(type = "qual",
+                    palette = "Set2",
                     direction = -1,
-                      name = 
-                        expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+                      name = "Date") +
   scale_shape(name = "Date") +
   theme1
 
 dev.off()
+
+### PERMANOVA ####
+
+zoop.permanova <- 
+  adonis2(zoop_FA_prop_diss ~ log(MPconcentration + 1) * scaled.date,
+          permutations = 999,
+          data = zoop_FA_prop_covariates,
+          method = "bray",
+          parallel = 8,
+          strata = zoop_FA_prop_covariates$corral)
+
+zoop.permanova  
 
 ### Dirichlet regression ----
 

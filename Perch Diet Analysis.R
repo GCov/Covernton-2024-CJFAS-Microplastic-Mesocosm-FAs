@@ -860,7 +860,7 @@ diss <- as.matrix(vegdist(rel_abund, method = "bray", na.rm = TRUE),
 
 nMDS1 <- metaMDS(diss,
                  distance = "bray",
-                 k = 2,
+                 k = 3,
                  maxis = 999,
                  trymax = 250,
                  wascores = TRUE)
