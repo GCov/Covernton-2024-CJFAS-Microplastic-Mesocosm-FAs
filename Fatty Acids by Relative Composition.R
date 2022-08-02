@@ -340,10 +340,10 @@ for(i in 1:length(unique(perch_FA_prop_data.scores2$MPconcentration))) {
 #### Plot ----
 
 png("Perch FA Proportions nMDS Plot.png",
-    width = 19,
-    height= 14, 
+    width = 40,
+    height= 25, 
     units = "cm",
-    res = 600)
+    res = 300)
 
 ggplot() +
   geom_polygon(data = perch_FA_prop_hulls,
@@ -351,13 +351,13 @@ ggplot() +
                    y = NMDS2,
                    fill = MPconcentration,
                    colour = MPconcentration),
-               alpha = 0.3,
-               size = 0.5) +
+               alpha = 0.5,
+               size = 1) +
   geom_segment(data = perch_FA_prop_variable_scores,
                aes(x = 0, y = 0, xend = MDS1*0.9, yend = MDS2*0.9),
                arrow = arrow(type = "closed",
                              length = unit(0.2, "cm")),
-               colour = "purple",
+               colour = "purple4",
                alpha = 0.5) +
   geom_hline(aes(yintercept = 0),
              linetype = "dashed") +
@@ -366,24 +366,23 @@ ggplot() +
   geom_point(data = perch_FA_prop_hulls,
              aes(x = NMDS1,
                  y = NMDS2,
-                 colour = MPconcentration),
+                 fill = MPconcentration),
              size = 4,
-             alpha = 0.5) +
+             alpha = 0.75,
+             shape = 21) +
   geom_text(data = perch_FA_prop_variable_scores,
             aes(x = MDS1, 
                 y = MDS2, 
                 label = FA),
             alpha = 0.9,
-            size = 3,
-            colour = "purple") +
-  scale_fill_brewer(type = "div",
-                    palette = "RdYlGn",
-                    direction = -1,
+            size = 20 / .pt,
+            colour = "purple4") +
+  scale_fill_brewer(type = "seq",
+                    palette = "YlOrRd",
                     name = 
                       expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
-  scale_colour_brewer(type = "div",
-                      palette = "RdYlGn",
-                      direction = -1,
+  scale_colour_brewer(type = "seq",
+                      palette = "YlOrRd",
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   theme1
@@ -392,13 +391,15 @@ dev.off()
 
 ### PERMANOVA ####
 
+perm <- how(nperm = 999)
+setBlocks(perm) <- perch_FA_prop_covariates$corral
+
 perch.permanova <- 
   adonis2(perch_FA_prop_diss ~ log(MPconcentration + 1) + body.weight,
-          permutations = 999,
+          permutations = perm,
           data = perch_FA_prop_covariates,
           method = "bray",
-          parallel = 8,
-          strata = perch_FA_prop_covariates$corral)
+          parallel = 8)
 
 perch.permanova  
 
@@ -922,10 +923,10 @@ for(i in 1:length(unique(zoop_FA_prop_data.scores2$date))) {
 #### Plot ----
 
 png("Zooplankton Proportions MDS Plot.png",
-    width = 19,
-    height= 12, 
+    width = 40,
+    height= 25, 
     units = "cm",
-    res = 600)
+    res = 300)
 
 ggplot() +
   geom_polygon(data = zoop_FA_prop_hulls,
@@ -934,13 +935,13 @@ ggplot() +
                    fill = date),
                colour = "black",
                alpha = 0.3,
-               size = 0.5) +
-  geom_segment(data = zoop_FA_prop_variable_scores,
+               size = 1) +
+  geom_segment(data = zoop_FA_variable_prop_scores,
                aes(x = 0, y = 0, xend = MDS1*0.9, yend = MDS2*0.9),
                arrow = arrow(type = "closed",
                              length = unit(0.2, "cm")),
-               colour = "purple",
-               alpha = 0.5) +
+               colour = "purple4",
+               alpha = 0.75) +
   geom_hline(aes(yintercept = 0),
              linetype = "dashed") +
   geom_vline(aes(xintercept = 0),
@@ -951,22 +952,20 @@ ggplot() +
                  shape = date,
                  colour = MPconcentration),
              alpha = 0.75,
-             size = 3) +
+             size = 6) +
   geom_text(data = zoop_FA_variable_prop_scores,
             aes(x = MDS1, 
                 y = MDS2, 
                 label = FA),
             alpha = 0.9,
-            size = 8 / .pt,
-            colour = "purple") +
-  scale_colour_brewer(type = "div",
-                      palette = "RdYlGn",
-                      direction = -1,
+            size = 20 / .pt,
+            colour = "purple4") +
+  scale_colour_brewer(type = "seq",
+                      palette = "YlOrRd",
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   scale_fill_brewer(type = "qual",
-                    palette = "Set2",
-                    direction = -1,
+                    palette = "Set3",
                       name = "Date") +
   scale_shape(name = "Date") +
   theme1
@@ -975,13 +974,15 @@ dev.off()
 
 ### PERMANOVA ####
 
+perm <- how(nperm = 999)
+setBlocks(perm) <- zoop_FA_prop_covariates$corral
+
 zoop.permanova <- 
   adonis2(zoop_FA_prop_diss ~ log(MPconcentration + 1) * scaled.date,
-          permutations = 999,
+          permutations = perm,
           data = zoop_FA_prop_covariates,
           method = "bray",
-          parallel = 8,
-          strata = zoop_FA_prop_covariates$corral)
+          parallel = 8)
 
 zoop.permanova  
 

@@ -18,11 +18,12 @@ theme1 <-
   theme_bw() +
   theme(
     panel.spacing = unit(1, "lines"),
-    text = element_text(size = 8),
-    axis.text = element_text(size = 7),
+    text = element_text(size = 24,
+                        family = "serif"),
+    axis.text = element_text(size = 24),
     strip.background = element_blank(),
-    strip.text = element_text(size = 8),
-    legend.text = element_text(size = 8),
+    strip.text = element_text(size = 24),
+    legend.text = element_text(size = 24),
     panel.grid = element_blank()
   )
 
