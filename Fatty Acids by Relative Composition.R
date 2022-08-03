@@ -339,8 +339,12 @@ for(i in 1:length(unique(perch_FA_prop_data.scores2$MPconcentration))) {
 
 #### Plot ----
 
+pal2 <-
+  colorRampPalette(c("#EBEA9A", "#E4C008", "#A17244", "#42511A", 
+                     "#1B334D", "#151918"))(7)
+
 png("Perch FA Proportions nMDS Plot.png",
-    width = 40,
+    width = 35,
     height= 25, 
     units = "cm",
     res = 300)
@@ -357,7 +361,7 @@ ggplot() +
                aes(x = 0, y = 0, xend = MDS1*0.9, yend = MDS2*0.9),
                arrow = arrow(type = "closed",
                              length = unit(0.2, "cm")),
-               colour = "purple4",
+               colour = "purple3",
                alpha = 0.5) +
   geom_hline(aes(yintercept = 0),
              linetype = "dashed") +
@@ -376,16 +380,15 @@ ggplot() +
                 label = FA),
             alpha = 0.9,
             size = 20 / .pt,
-            colour = "purple4") +
-  scale_fill_brewer(type = "seq",
-                    palette = "YlOrRd",
+            colour = "purple3") +
+  scale_fill_manual(values = pal2,
                     name = 
                       expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
-  scale_colour_brewer(type = "seq",
-                      palette = "YlOrRd",
+  scale_colour_manual(values = pal2,
                       name = 
                         expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
-  theme1
+  theme1 +
+  theme(legend.position = "bottom")
 
 dev.off()
 
@@ -403,12 +406,23 @@ perch.permanova <-
 
 perch.permanova  
 
+perch.betadisper <- 
+  betadisper(vegdist(trimmed_perch_FA, 
+                     method = "bray", 
+                     na.rm = TRUE),
+             group = as.factor(perch_FA_prop_covariates$MPconcentration),
+             type = "median")
+
+anova(perch.betadisper)
+boxplot(perch.betadisper)
+TukeyHSD(perch.betadisper)
+
 # No significant effect of MP concentration or body weight
 
 
 ### Dirichlet regression ----
 
-DR_Y <- DR_data(trimmed_FA)
+DR_Y <- DR_data(trimmed_perch_FA)
 
 # Run model
 
@@ -454,12 +468,7 @@ perch_FA_dir_newpredict <- predict(perch_FA_dir_mod1,
                                    mu = TRUE, phi = FALSE)
 
 colnames(perch_FA_dir_newpredict) <- 
-  colnames(trimmed_FA)
-
-perch_FA_dir_newdata$MPconcentration <-
-  (perch_FA_dir_newdata$scaled.MPconcentration * 
-     sd(perch_FA_prop2$MPconcentration)) +
-  mean(perch_FA_prop2$MPconcentration)
+  colnames(trimmed_perch_FA)
 
 # Put predictions into long form
 
@@ -468,45 +477,52 @@ perch_FA_dir_newpredict <-
 
 perch_FA_dir_newpredict_long <- 
   perch_FA_dir_newpredict %>%
-    pivot_longer(names(perch_FA_dir_newpredict[c(25:39)]),
+    pivot_longer(names(perch_FA_dir_newpredict[c(25:38)]),
                names_to = "metric",
                values_to = "value")
 
 perch_FA_dir_newpredict_long$metric <- 
   as.factor(perch_FA_dir_newpredict_long$metric)
 
+levels(perch_FA_dir_newpredict_long$metric) <-
+  FA.names[c(3,5,7,13,15,16,19,23,26:28,31:33)]
+
 # Put original data into long form
 
 perch_FA_prop_long <- 
-  trimmed_FA %>%
-  pivot_longer(names(trimmed_FA),
+  trimmed_perch_FA %>%
+  pivot_longer(names(trimmed_perch_FA),
                names_to = "metric",
                values_to = "value")
 
 perch_FA_prop_long$metric <- as.factor(perch_FA_prop_long$metric)
 
+levels(perch_FA_prop_long$metric) <- 
+  FA.names[c(3,5,7,13,15,16,19,23,26:28,31:33)]
 
 #### Plot predictions ----
 
 png("Perch Dirichlet Plot.png",
-    width = 29,
-    height= 15, 
+    width = 40,
+    height= 60, 
     units = "cm",
-    res = 600)
+    res = 300)
 
 ggplot() +
   geom_line(data = perch_FA_dir_newpredict_long,
             aes(x = MPconcentration,
                 y = value),
-            colour = "red") +
+            colour = "red",
+            size = 1.5) +
   geom_point(data = perch_FA_prop_long,
              aes(x = perch_FA_dir_newpredict_long$MPconcentration,
-                 y = value)) +
+                 y = value),
+             size = 3) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
-       y = "Proportion Fatty Acid") +
+       y = "Proportion") +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  facet_wrap(~ metric, ncol = 5) +
+  facet_wrap(~ metric, ncol = 3) +
   theme1
 
 dev.off()
@@ -952,7 +968,7 @@ ggplot() +
                  shape = date,
                  colour = MPconcentration),
              alpha = 0.75,
-             size = 6) +
+             size = 4) +
   geom_text(data = zoop_FA_variable_prop_scores,
             aes(x = MDS1, 
                 y = MDS2, 
@@ -986,15 +1002,21 @@ zoop.permanova <-
 
 zoop.permanova  
 
+zoop.betadisper <- 
+  betadisper(vegdist(trimmed_zoop_FA, 
+                     method = "bray", 
+                     na.rm = TRUE),
+             group = as.factor(zoop_FA_prop_covariates$MPconcentration),
+             type = "centroid")
+
+anova(zoop.betadisper)
+plot(zoop.betadisper)
+boxplot(zoop.betadisper)
+TukeyHSD(zoop.betadisper)
+
 ### Dirichlet regression ----
 
 # Re-scale response so it sums to 1
-
-trimmed_zoop_FA <- 
-  data.frame(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]) %>% 
-  select(where(function(x){mean(x) >= 0.01}))
-
-trimmed_zoop_FA <- trimmed_zoop_FA/rowSums(trimmed_zoop_FA)
 
 DR_zoop_Y <- DR_data(trimmed_zoop_FA)
 
@@ -1042,59 +1064,29 @@ zoop_FA_prop_long <-
 #### Plot predictions ----
 
 png("Zooplankton Dirichlet Plot.png",
-    width = 19,
-    height= 15, 
+    width = 40,
+    height= 70, 
     units = "cm",
-    res = 600)
+    res = 300)
 
 ggplot() +
   geom_line(data = zoop_FA_prop_end_predict_long,
             aes(x = MPconcentration,
                 y = value),
-            colour = "red") +
+            colour = "red",
+            size = 1.5) +
   geom_point(data = zoop_FA_prop_long,
              aes(x = zoop_FA_prop_end_predict_long$MPconcentration,
-                 y = value)) +
+                 y = value), 
+             size = 3) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = "Proportion Fatty Acid") +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  facet_grid(date ~ metric) +
+  facet_grid(metric ~ date) +
   theme1
 
 dev.off()
-
-# DHA prediction
-
-zoop_FA_prop_end$DHA.pred <- zoop_FA_dir_predict1[,33]
-
-ggplot(zoop_FA_prop_end) +
-  geom_line(aes(x = MPconcentration,
-                y = DHA.pred)) +
-  geom_point(aes(x = MPconcentration,
-                 y = C_22.6n.3)) +
-  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
-       y = "Proportion DHA") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  theme1
-
-# EPA prediction
-
-zoop_FA_prop_end$EPA.pred <- zoop_FA_dir_predict1[,31]
-
-ggplot(zoop_FA_prop_end) +
-  geom_line(aes(x = MPconcentration,
-                y = EPA.pred)) +
-  geom_point(aes(x = MPconcentration,
-                 y = C_22.6n.3)) +
-  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
-       y = "Proportion EPA") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  theme1
-
-
 
 
 # Explore different indicators ----

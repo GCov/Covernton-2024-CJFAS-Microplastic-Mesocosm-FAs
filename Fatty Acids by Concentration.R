@@ -402,18 +402,22 @@ perchHUFA_sim$lower <- perchHUFA_pred$fit - 1.96*perchHUFA_pred$se.fit
 
 ### Plot ----
 
-colours <- c("LA" = "red", 
-             "ARA" = "orange",
-             "ALA" = "yellow",
-             "DHA" = "green",
-             "EPA" = "blue",
-             "Total HUFAs" = "purple4")
+pal1 <- 
+  colorRampPalette(c("#EBEA9A", "#E4C008", "#A17244", "#42511A", 
+                     "#1B334D", "#151918"))(6)
+
+colours <- c("LA" = pal1[1], 
+             "ARA" = pal1[2],
+             "ALA" = pal1[3],
+             "DHA" = pal1[4],
+             "EPA" = pal1[5],
+             "Total HUFAs" = pal1[6])
 
 png("Perch Essential FAs Plot.png",
-    width = 12,
-    height= 9, 
+    width = 25,
+    height= 16, 
     units = "cm",
-    res = 600)
+    res = 300)
 
 ggplot(perch_FA) +
   geom_ribbon(data = perchLA_sim,
@@ -421,7 +425,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "LA"),
-              alpha = 0.2) +
+              alpha = 0.5) +
   geom_line(data = perchLA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -429,7 +433,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_18.2n.6,
                  colour = "LA"),
-             size = 1,
+             size = 4,
              shape = 21,
              alpha = 0.75) +
   geom_ribbon(data = perchARA_sim,
@@ -437,7 +441,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "ARA"),
-              alpha = 0.2) +
+              alpha = 0.5) +
   geom_line(data = perchARA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -445,7 +449,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_20.4n.6,
                  colour = "ARA"),
-             size = 1,
+             size = 4,
              shape = 21,
              alpha = 0.75) +
   geom_ribbon(data = perchALA_sim,
@@ -453,7 +457,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "ALA"),
-              alpha = 0.2) +
+              alpha = 0.5) +
   geom_line(data = perchALA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -461,7 +465,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_18.3n.3,
                  colour = "ALA"),
-             size = 1,
+             size = 4,
              shape = 21,
              alpha = 0.75) +
   geom_ribbon(data = perchEPA_sim,
@@ -469,7 +473,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "EPA"),
-              alpha = 0.2) +
+              alpha = 0.5) +
   geom_line(data = perchEPA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -477,7 +481,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_20.5n.3,
                  colour = "EPA"),
-             size = 1,
+             size = 4,
              shape = 21,
              alpha = 0.75) +
   geom_ribbon(data = perchDHA_sim,
@@ -485,7 +489,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "DHA"),
-              alpha = 0.2) +     
+              alpha = 0.5) +     
   geom_line(data = perchDHA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -493,25 +497,9 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_22.6n.3,
                  colour = "DHA"),
-             size = 1,
+             size = 4,
              shape = 21,
-             alpha = 0.75) +
-  geom_ribbon(data = perchHUFA_sim,
-              aes(x = MPconcentration,
-                  ymin = lower,
-                  ymax = upper,
-                  fill = "Total HUFAs"),
-              alpha = 0.2) +     
-  geom_line(data = perchHUFA_sim,
-            aes(x = MPconcentration,
-                y = pred,
-                colour = "Total HUFAs")) +
-  geom_point(aes(x = MPconcentration,
-                 y = HUFAs,
-                 colour = "Total HUFAs"),
-             size = 1,
-             shape = 21,
-             alpha = 0.75) +
+             alpha = 0.75) + 
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
   scale_x_continuous(trans = "log1p",
