@@ -425,7 +425,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "LA"),
-              alpha = 0.5) +
+              alpha = 0.3) +
   geom_line(data = perchLA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -441,7 +441,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "ARA"),
-              alpha = 0.5) +
+              alpha = 0.3) +
   geom_line(data = perchARA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -457,7 +457,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "ALA"),
-              alpha = 0.5) +
+              alpha = 0.3) +
   geom_line(data = perchALA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -473,7 +473,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "EPA"),
-              alpha = 0.5) +
+              alpha = 0.3) +
   geom_line(data = perchEPA_sim,
             aes(x = MPconcentration,
                 y = pred,
@@ -489,7 +489,7 @@ ggplot(perch_FA) +
                   ymin = lower,
                   ymax = upper,
                   fill = "DHA"),
-              alpha = 0.5) +     
+              alpha = 0.3) +     
   geom_line(data = perchDHA_sim,
             aes(x = MPconcentration,
                 y = pred,
