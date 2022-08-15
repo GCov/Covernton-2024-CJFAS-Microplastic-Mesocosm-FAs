@@ -7,7 +7,6 @@ library(dplyr)
 library(MuMIn)
 library(tidyr)
 library(vegan)
-library(ggbiplot)
 
 FA.names <- c("12:0", "13:0", "14:0", "15:0", "16:0", "17:0", "18:0", "20:0", 
               "22:0", "24:0", "12:1", "14:1", "16:1n-7", "16:1n-9", "18:1n-7",
@@ -404,18 +403,17 @@ perchHUFA_sim$lower <- perchHUFA_pred$fit - 1.96*perchHUFA_pred$se.fit
 
 pal1 <- 
   colorRampPalette(c("#EBEA9A", "#E4C008", "#A17244", "#42511A", 
-                     "#1B334D", "#151918"))(6)
+                     "#1B334D", "#151918"))(5)
 
 colours <- c("LA" = pal1[1], 
              "ARA" = pal1[2],
              "ALA" = pal1[3],
              "DHA" = pal1[4],
-             "EPA" = pal1[5],
-             "Total HUFAs" = pal1[6])
+             "EPA" = pal1[5])
 
 png("Perch Essential FAs Plot.png",
-    width = 25,
-    height= 16, 
+    width = 30,
+    height= 25, 
     units = "cm",
     res = 300)
 
@@ -433,8 +431,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_18.2n.6,
                  colour = "LA"),
-             size = 4,
-             shape = 21,
+             size = 3,
              alpha = 0.75) +
   geom_ribbon(data = perchARA_sim,
               aes(x = MPconcentration,
@@ -449,8 +446,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_20.4n.6,
                  colour = "ARA"),
-             size = 4,
-             shape = 21,
+             size = 3,
              alpha = 0.75) +
   geom_ribbon(data = perchALA_sim,
               aes(x = MPconcentration,
@@ -465,8 +461,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_18.3n.3,
                  colour = "ALA"),
-             size = 4,
-             shape = 21,
+             size = 3,
              alpha = 0.75) +
   geom_ribbon(data = perchEPA_sim,
               aes(x = MPconcentration,
@@ -481,8 +476,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_20.5n.3,
                  colour = "EPA"),
-             size = 4,
-             shape = 21,
+             size = 3,
              alpha = 0.75) +
   geom_ribbon(data = perchDHA_sim,
               aes(x = MPconcentration,
@@ -497,8 +491,7 @@ ggplot(perch_FA) +
   geom_point(aes(x = MPconcentration,
                  y = C_22.6n.3,
                  colour = "DHA"),
-             size = 4,
-             shape = 21,
+             size = 3,
              alpha = 0.75) + 
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
@@ -508,7 +501,8 @@ ggplot(perch_FA) +
                       name = "") +
   scale_fill_manual(values = colours,
                     name = "") +
-  theme1
+  theme1 +
+  theme(legend.position = "bottom")
 
 dev.off()
 
@@ -522,9 +516,10 @@ perch_FA2$OA.PA <- with(perch_FA2, C_18.1n.9 / C_16.1n.7)
 
 names(perch_FA2)
 
+
 perch_FA_long <- 
-  perch_FA2[,c(1:6, 17, 26, 35, 45:48, 51:68)] %>%
-  pivot_longer(names(perch_FA2)[c(66:68)],
+  perch_FA2[,c(1:6, 17, 26, 35, 45:70)] %>%
+  pivot_longer(names(perch_FA2)[c(68:70)],
                names_to = "metric",
                values_to = "value")
 

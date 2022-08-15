@@ -278,7 +278,7 @@ dev.off()
 
 trimmed_perch_FA <- 
   data.frame(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] %>% 
-               select(where(function(x){mean(x) >= 0.01})))
+               select(where(function(x){mean(x) >= 0.001})))
 
 trimmed_perch_FA <- 
   trimmed_perch_FA / rowSums(trimmed_perch_FA)
@@ -289,14 +289,14 @@ perch_FA_prop_diss <- as.matrix(vegdist(trimmed_perch_FA,
                                    na.rm = TRUE), 
                            labels = TRUE)
 
-NMDS_scree(perch_FA_prop_diss)  # 4 dimensions looks good
+NMDS_scree(perch_FA_prop_diss)  # 3 dimensions looks good
 
 set.seed(5465)
 
 perch_FA_prop_nMDS1 <- 
   metaMDS(perch_FA_prop_diss,
           distance = "bray",
-          k = 4,
+          k = 3,
           trymax = 250,
           wascores = TRUE,
           expand = TRUE,
@@ -318,7 +318,7 @@ perch_FA_prop_variable_scores <-
   as.data.frame(perch_FA_prop_scores$species)
 
 perch_FA_prop_variable_scores$FA <- 
-  FA.names[c(3,5,7,13,15,16,19,23,26:28,31:33)]
+  FA.names[-c(1,2,9,11,18,26,35)]
 
 #### Generate hulls ----
 
@@ -345,7 +345,7 @@ pal2 <-
 
 png("Perch FA Proportions nMDS Plot.png",
     width = 35,
-    height= 25, 
+    height= 30, 
     units = "cm",
     res = 300)
 
@@ -877,7 +877,7 @@ dev.off()
 
 trimmed_zoop_FA <- 
   data.frame(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]) %>% 
-  select(where(function(x){mean(x) >= 0.01}))
+  select(where(function(x){mean(x) >= 0.001}))
 
 trimmed_zoop_FA <- trimmed_zoop_FA/rowSums(trimmed_zoop_FA)
 
@@ -914,7 +914,8 @@ zoop_FA_prop_data.scores2 <- cbind(zoop_FA_prop_data.scores,
 zoop_FA_variable_prop_scores <- 
   as.data.frame(zoop_FA_prop_scores$species)
 
-zoop_FA_variable_prop_scores$FA <- FA.names[c(3,5,7,13,15,16,18,19,20,23,26:28,31,33)]
+zoop_FA_variable_prop_scores$FA <- 
+  FA.names[-c(2,11,12,34,35)]
 
 #### Generate hulls ----
 
@@ -939,8 +940,8 @@ for(i in 1:length(unique(zoop_FA_prop_data.scores2$date))) {
 #### Plot ----
 
 png("Zooplankton Proportions MDS Plot.png",
-    width = 40,
-    height= 25, 
+    width = 45,
+    height= 30, 
     units = "cm",
     res = 300)
 
@@ -1000,7 +1001,7 @@ zoop.permanova <-
           method = "bray",
           parallel = 8)
 
-zoop.permanova  
+zoop.permanova
 
 zoop.betadisper <- 
   betadisper(vegdist(trimmed_zoop_FA, 
