@@ -274,8 +274,8 @@ perch_FA_prop_PCA_site <- cbind(perch_FA_prop_covariates,
 #### Plot ----
 
 png("Perch FA Proportions PCA.png",
-    width = 12,
-    height = 11,
+    width = 19,
+    height= 14, 
     units = "cm",
     res = 500)
 
@@ -290,14 +290,14 @@ ggplot() +
              aes(x = PC1,
                  y = PC2,
                  colour = as.factor(MPconcentration)),
-             size = 1,
+             size = 2,
              alpha = 0.75) +
   geom_text(data = perch_FA_prop_PCA_species,
             aes(x = PC1, 
                 y = PC2, 
                 label = FA),
             alpha = 0.95,
-            size = 2,
+            size = 7 / .pt,
             colour = "black") +
   scale_colour_viridis_d(name =
                            expression(paste("Exposure Concentration (MPs" ~
@@ -307,8 +307,7 @@ ggplot() +
        y = "PC2") +
   theme1 +
   theme(legend.key.size = unit(0.2, "cm"),
-        legend.spacing = unit(0, "cm"),
-        legend.position = "bottom")
+        legend.spacing = unit(0, "cm"))
 
 dev.off()
 
@@ -889,8 +888,8 @@ zoop_FA_prop_PCA_site <- cbind(zoop_FA_prop_covariates,
 #### Plot ----
 
 png("Zooplankton FA Proportions PCA.png",
-    width = 12,
-    height= 11, 
+    width = 19,
+    height= 13, 
     units = "cm",
     res = 500)
 
@@ -906,17 +905,17 @@ ggplot() +
                  y = PC2,
                  colour = as.factor(MPconcentration),
                  shape = as.factor(date)),
-             size = 1,
+             size = 2,
              alpha = 0.75) +
   geom_text(data = zoop_FA_prop_PCA_species,
             aes(x = PC1, 
                 y = PC2, 
                 label = FA),
             alpha = 0.95,
-            size = 2,
+            size = 7 / .pt,
             colour = "black") +
   scale_colour_viridis_d(name =
-                           expression(paste("Exposure propentration (MPs" ~
+                           expression(paste("Exposure Concentration (MPs" ~
                                               L ^ -1 * ")")),
                          direction = -1) +
   scale_shape(name = "Date") +
@@ -924,8 +923,7 @@ ggplot() +
        y = "PC2") +
   theme1 +
   theme(legend.key.size = unit(0.2, "cm"),
-        legend.spacing = unit(0, "cm"),
-        legend.position = "bottom")
+        legend.spacing = unit(0, "cm"))
 
 dev.off()
 
