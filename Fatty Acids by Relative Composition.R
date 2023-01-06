@@ -11,6 +11,19 @@ library(tidyr)
 library(DirichletReg)
 library(easyCODA)
 
+theme1 <-
+  theme_bw() +
+  theme(
+    panel.spacing = unit(1, "lines"),
+    text = element_text(size = 7,
+                        family = "serif"),
+    axis.text = element_text(size = 7),
+    strip.background = element_blank(),
+    strip.text = element_text(size = 7),
+    legend.text = element_text(size = 7),
+    panel.grid = element_blank()
+  )
+
 # Load data ----
 
 FAs_percent <- read.csv("FAs_percent.csv", header = TRUE)
@@ -20,6 +33,11 @@ FAs_percent$corral <- as.factor(FAs_percent$corral)
 FAs_percent$sample.type <- as.factor(FAs_percent$sample.type)
 FAs_percent$date <- as.Date(FAs_percent$date,
                     format = "%b. %d, %Y")
+
+treatments <- data.frame(corral = 
+                           as.factor(c("B", "C", "D", "E", "F", "G", "H", "I")),
+                         MPconcentration = as.numeric(c(0, 414, 29240, 100, 6, 
+                                                        7071, 0, 1710)))
 
 FAs_percent <- left_join(FAs_percent, 
                  treatments,
@@ -44,6 +62,14 @@ food_FA_prop <- subset(FAs_prop, sample.type == "fish food")
 ## Prep perch data ----
 
 ### Add in perch biometrics data ----
+
+perch_biometrics <- read.csv("perch_biometrics.csv", header = TRUE)
+
+str(perch_biometrics)
+
+perch_biometrics$corral <- as.factor(perch_biometrics$corral)
+perch_biometrics$ID <- as.factor(perch_biometrics$ID)
+perch_biometrics$sex <- as.factor(perch_biometrics$sex)
 
 # Combine with perch FA data
 
@@ -193,7 +219,17 @@ dev.off()
 
 ### PCA ----
 
-#### Pull out covariates ----
+#### Pull out FA data and covariates ----
+
+# Remove any FAs that contribute less than 1% and re-scale response so it 
+# sums to 1
+
+trimmed_perch_FA <- 
+  data.frame(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] %>% 
+               select(where(function(x){mean(x) >= 0.01})))
+
+trimmed_perch_FA <- 
+  trimmed_perch_FA / rowSums(trimmed_perch_FA)
 
 perch_FA_prop_covariates <- perch_FA_prop2[,c(1:3,51:67),]
 
@@ -201,12 +237,14 @@ perch_FA_prop_totals <- perch_FA_prop2[,c(17,26,35,45)]
 
 summary(perch_FA_prop_totals)
 
-#### Pull out fatty acid composition matrix ----
+# Convert to CLRs
 
-perch_FA_prop_matrix <- perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]
+trimmed_perch_FA_clr <- decostand(trimmed_perch_FA,
+                                  method = "clr",
+                                  MARGIN = 1)
 
 #### Run PCA ----
-perch_FA_prop_pca <- rda(perch_FA_prop_matrix,
+perch_FA_prop_pca <- rda(trimmed_perch_FA_clr,
                          scale. = FALSE)
 
 # Bar plot of relative eigenvalues
@@ -222,7 +260,13 @@ perch_FA_prop_PCA_site <- perch_FA_prop_pca$CA$u
 
 # 'Species' scores
 perch_FA_prop_PCA_species <- data.frame(perch_FA_prop_pca$CA$v)
-perch_FA_prop_PCA_species$FA <- FA.names
+
+trimmed.FA.names <- 
+  c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "18:2(n-6)", 
+    "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", "18:4(n-3)", "20:5(n-3)", 
+    "22:5(n-3)", "22:6n-3")
+
+perch_FA_prop_PCA_species$FA <- trimmed.FA.names
 
 perch_FA_prop_PCA_site <- cbind(perch_FA_prop_covariates,
                                 perch_FA_prop_PCA_site[, 1:2])
@@ -230,58 +274,56 @@ perch_FA_prop_PCA_site <- cbind(perch_FA_prop_covariates,
 #### Plot ----
 
 png("Perch FA Proportions PCA.png",
-    width = 19,
-    height= 14, 
+    width = 12,
+    height = 11,
     units = "cm",
-    res = 600)
+    res = 500)
 
 ggplot() +
   geom_hline(aes(yintercept = 0),
-             linetype = "dashed") +
+             linetype = "dashed",
+             linewidth = 0.25) +
   geom_vline(aes(xintercept = 0),
-             linetype = "dashed") +
-  geom_segment(data = perch_FA_prop_PCA_species,
-               aes(x = 0, y = 0, xend = PC1*0.9, yend = PC2*0.9),
-               arrow = arrow(type = "closed",
-                             length = unit(0.2, "cm")),
-               colour = "purple",
-               alpha = 0.5) +
+             linetype = "dashed",
+             linewidth = 0.25) +
   geom_point(data = perch_FA_prop_PCA_site,
              aes(x = PC1,
                  y = PC2,
                  colour = as.factor(MPconcentration)),
-             size = 4,
+             size = 1,
              alpha = 0.75) +
   geom_text(data = perch_FA_prop_PCA_species,
             aes(x = PC1, 
                 y = PC2, 
                 label = FA),
-            alpha = 0.5,
-            size = 3,
-            colour = "purple") +
-  scale_colour_brewer(type = "div",
-                      palette = "RdYlGn",
-                      name = 
-                        expression(paste("Exposure propentration (MPs"~L^-1*")")),
-                      direction = -1) +
+            alpha = 0.95,
+            size = 2,
+            colour = "black") +
+  scale_colour_viridis_d(name =
+                           expression(paste("Exposure Concentration (MPs" ~
+                                              L ^ -1 * ")")),
+                         direction = -1) +
   labs(x = "PC1",
        y = "PC2") +
-  theme1
+  theme1 +
+  theme(legend.key.size = unit(0.2, "cm"),
+        legend.spacing = unit(0, "cm"),
+        legend.position = "bottom")
 
 dev.off()
 
+### RDA ----
+
+perch_FA_prop_rda <- 
+  rda(trimmed_perch_FA_clr ~ as.factor(MPconcentration),
+      scale. = FALSE,
+      data = perch_FA_prop_covariates)
+
+summary(perch_FA_prop_rda)
+
+anova(perch_FA_prop_rda)
 
 ### nMDS ----
-
-# Remove any FAs that contribute less than 0.01% and re-scale response so it 
-# sums to 1
-
-trimmed_perch_FA <- 
-  data.frame(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] %>% 
-               select(where(function(x){mean(x) >= 0.001})))
-
-trimmed_perch_FA <- 
-  trimmed_perch_FA / rowSums(trimmed_perch_FA)
 
 # Calculate distance matrix
 perch_FA_prop_diss <- as.matrix(vegdist(trimmed_perch_FA, 
@@ -318,7 +360,7 @@ perch_FA_prop_variable_scores <-
   as.data.frame(perch_FA_prop_scores$species)
 
 perch_FA_prop_variable_scores$FA <- 
-  FA.names[-c(1,2,9,11,18,26,35)]
+  trimmed.FA.names
 
 #### Generate hulls ----
 
@@ -328,12 +370,12 @@ perch_FA_prop_data.scores2$MPconcentration <-
 perch_FA_prop_hulls <- data.frame()
 
 for(i in 1:length(unique(perch_FA_prop_data.scores2$MPconcentration))) {
-  hull <-
-    perch_FA_data.scores2[perch_FA_prop_data.scores2$MPconcentration ==
-                            unique(perch_FA_prop_data.scores2$MPconcentration)[i],
-    ][chull(perch_FA_data.scores2[perch_FA_prop_data.scores2$MPconcentration ==
-                                    unique(perch_FA_prop_data.scores2$MPconcentration)[i],
-                                  c(1:2)]),]
+  subset <- 
+    perch_FA_prop_data.scores2[perch_FA_prop_data.scores2$MPconcentration ==
+                                 unique(perch_FA_prop_data.scores2$MPconcentration)[i],
+                               ]
+  hullrows <- chull(subset[,c(1:2)])
+  hull <- subset[hullrows,]
   perch_FA_prop_hulls <- rbind(perch_FA_prop_hulls, hull)
 }
 
@@ -351,8 +393,8 @@ png("Perch FA Proportions nMDS Plot.png",
 
 ggplot() +
   geom_polygon(data = perch_FA_prop_hulls,
-               aes(x = NMDS1,
-                   y = NMDS2,
+               aes(x = MDS1,
+                   y = MDS2,
                    fill = MPconcentration,
                    colour = MPconcentration),
                alpha = 0.5,
@@ -368,8 +410,8 @@ ggplot() +
   geom_vline(aes(xintercept = 0),
              linetype = "dashed") +
   geom_point(data = perch_FA_prop_hulls,
-             aes(x = NMDS1,
-                 y = NMDS2,
+             aes(x = MDS1,
+                 y = MDS2,
                  fill = MPconcentration),
              size = 4,
              alpha = 0.75,
@@ -793,18 +835,31 @@ dev.off()
 
 #### Pull out covariates ----
 
+# Remove any FAs that contribute less than 1% and re-scale response so it 
+# sums to 1
+
+trimmed_zoop_FA <- 
+  data.frame(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]) %>% 
+  select(where(function(x){mean(x) >= 0.01}))
+
+trimmed_zoop_FA <- trimmed_zoop_FA/rowSums(trimmed_zoop_FA)
+
 zoop_FA_prop_covariates <- zoop_FA_prop[,c(1:3,51:54),]
 
 zoop_FA_prop_totals <- zoop_FA_prop[,c(17,26,35,45)]
 
 summary(zoop_FA_prop_totals)
 
-# Pull out fatty acid composition matrix
+# Convert to CLRs
 
-zoop_FA_prop_matrix <- as.matrix(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)])
+trimmed_zoop_FA_clr <- decostand(trimmed_zoop_FA,
+                                 method = "clr",
+                                 MARGIN = 1)
+
+
 
 #### Run PCA ----
-zoop_FA_prop_pca <- rda(zoop_FA_prop_matrix,
+zoop_FA_prop_pca <- rda(trimmed_zoop_FA_clr,
                         scale. = FALSE)
 
 # Bar plot of relative eigenvalues
@@ -820,7 +875,13 @@ zoop_FA_prop_PCA_site <- zoop_FA_prop_pca$CA$u
 
 # 'Species' scores
 zoop_FA_prop_PCA_species <- data.frame(zoop_FA_prop_pca$CA$v)
-zoop_FA_prop_PCA_species$FA <- FA.names
+
+trimmed.FA.names.zoops <- 
+  c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "22:1(n-9)",
+    "18:2(n-6)", "18:(3n-6)", "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
+    "18:4(n-3)", "20:5(n-3)", "22:6n-3")
+
+zoop_FA_prop_PCA_species$FA <- trimmed.FA.names.zoops
 
 zoop_FA_prop_PCA_site <- cbind(zoop_FA_prop_covariates,
                                zoop_FA_prop_PCA_site[, 1:2])
@@ -828,58 +889,69 @@ zoop_FA_prop_PCA_site <- cbind(zoop_FA_prop_covariates,
 #### Plot ----
 
 png("Zooplankton FA Proportions PCA.png",
-    width = 19,
-    height= 14, 
+    width = 12,
+    height= 11, 
     units = "cm",
-    res = 600)
+    res = 500)
 
 ggplot() +
   geom_hline(aes(yintercept = 0),
-             linetype = "dashed") +
+             linetype = "dashed",
+             linewidth = 0.25) +
   geom_vline(aes(xintercept = 0),
-             linetype = "dashed") +
-  geom_segment(data = zoop_FA_prop_PCA_species,
-               aes(x = 0, y = 0, xend = PC1*0.9, yend = PC2*0.9),
-               arrow = arrow(type = "closed",
-                             length = unit(0.2, "cm")),
-               colour = "purple",
-               alpha = 0.5) +
+             linetype = "dashed",
+             linewidth = 0.25) +
   geom_point(data = zoop_FA_prop_PCA_site,
              aes(x = PC1,
                  y = PC2,
                  colour = as.factor(MPconcentration),
                  shape = as.factor(date)),
-             size = 4,
+             size = 1,
              alpha = 0.75) +
   geom_text(data = zoop_FA_prop_PCA_species,
             aes(x = PC1, 
                 y = PC2, 
                 label = FA),
-            alpha = 0.5,
-            size = 3,
-            colour = "purple") +
-  scale_colour_brewer(type = "div",
-                      palette = "RdYlGn",
-                      name = 
-                        expression(paste("Exposure propentration (MPs"~L^-1*")")),
-                      direction = -1) +
+            alpha = 0.95,
+            size = 2,
+            colour = "black") +
+  scale_colour_viridis_d(name =
+                           expression(paste("Exposure propentration (MPs" ~
+                                              L ^ -1 * ")")),
+                         direction = -1) +
   scale_shape(name = "Date") +
   labs(x = "PC1",
        y = "PC2") +
-  theme1
+  theme1 +
+  theme(legend.key.size = unit(0.2, "cm"),
+        legend.spacing = unit(0, "cm"),
+        legend.position = "bottom")
 
 dev.off()
 
+### RDA ----
+
+zoop_FA_prop_rda <- 
+  rda(trimmed_zoop_FA_clr ~ as.factor(MPconcentration) + as.factor(date),
+      scale. = FALSE,
+      data = zoop_FA_prop_covariates)
+
+summary(zoop_FA_prop_rda)
+
+zoop_FA_prop_rda2 <- 
+  rda(trimmed_zoop_FA_clr ~ as.factor(MPconcentration),
+      scale. = FALSE,
+      data = zoop_FA_prop_covariates)
+
+zoop_FA_prop_rda3 <- 
+  rda(trimmed_zoop_FA_clr ~ as.factor(date),
+      scale. = FALSE,
+      data = zoop_FA_prop_covariates)
+
+anova(zoop_FA_prop_rda, zoop_FA_prop_rda2)  # date is significant
+anova(zoop_FA_prop_rda, zoop_FA_prop_rda3)  # treatment is not
+
 ### nMDS ----
-
-# Remove any FAs that contribute less than 0.01% and re-scale response so it 
-# sums to 1
-
-trimmed_zoop_FA <- 
-  data.frame(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]) %>% 
-  select(where(function(x){mean(x) >= 0.001}))
-
-trimmed_zoop_FA <- trimmed_zoop_FA/rowSums(trimmed_zoop_FA)
 
 # Calculate distance matrix
 zoop_FA_prop_diss <- as.matrix(vegdist(trimmed_zoop_FA, 
@@ -915,7 +987,7 @@ zoop_FA_variable_prop_scores <-
   as.data.frame(zoop_FA_prop_scores$species)
 
 zoop_FA_variable_prop_scores$FA <- 
-  FA.names[-c(2,11,12,34,35)]
+  trimmed.FA.names.zoops
 
 #### Generate hulls ----
 
@@ -940,8 +1012,8 @@ for(i in 1:length(unique(zoop_FA_prop_data.scores2$date))) {
 #### Plot ----
 
 png("Zooplankton Proportions MDS Plot.png",
-    width = 45,
-    height= 30, 
+    width = 12,
+    height= 10, 
     units = "cm",
     res = 300)
 
@@ -969,13 +1041,13 @@ ggplot() +
                  shape = date,
                  colour = MPconcentration),
              alpha = 0.75,
-             size = 4) +
+             size = 1) +
   geom_text(data = zoop_FA_variable_prop_scores,
             aes(x = MDS1, 
                 y = MDS2, 
                 label = FA),
             alpha = 0.9,
-            size = 20 / .pt,
+            size = 7 / .pt,
             colour = "purple4") +
   scale_colour_brewer(type = "seq",
                       palette = "YlOrRd",
