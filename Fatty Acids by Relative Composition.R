@@ -275,7 +275,7 @@ perch_FA_prop_PCA_site <- cbind(perch_FA_prop_covariates,
 
 png("Perch FA Proportions PCA.png",
     width = 19,
-    height= 14, 
+    height= 8, 
     units = "cm",
     res = 500)
 
@@ -289,9 +289,10 @@ ggplot() +
   geom_point(data = perch_FA_prop_PCA_site,
              aes(x = PC1,
                  y = PC2,
-                 colour = as.factor(MPconcentration)),
+                 fill = as.factor(MPconcentration)),
              size = 2,
-             alpha = 0.75) +
+             alpha = 0.75,
+             shape = 21) +
   geom_text(data = perch_FA_prop_PCA_species,
             aes(x = PC1, 
                 y = PC2, 
@@ -299,11 +300,11 @@ ggplot() +
             alpha = 0.95,
             size = 7 / .pt,
             colour = "black") +
-  scale_colour_viridis_d(name =
-                           expression(paste("Exposure Concentration (MPs" ~
-                                              L ^ -1 * ")")),
-                         direction = -1) +
-  labs(x = "PC1",
+  scale_fill_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "inferno") +
+  labs(x = "PC1", 
        y = "PC2") +
   theme1 +
   theme(legend.key.size = unit(0.2, "cm"),
@@ -314,13 +315,16 @@ dev.off()
 ### RDA ----
 
 perch_FA_prop_rda <- 
-  rda(trimmed_perch_FA_clr ~ as.factor(MPconcentration),
+  rda(trimmed_perch_FA_clr ~ as.factor(MPconcentration) + body.weight,
       scale. = FALSE,
       data = perch_FA_prop_covariates)
 
 summary(perch_FA_prop_rda)
 
-anova(perch_FA_prop_rda)
+anova(perch_FA_prop_rda, by = "term")
+anova(perch_FA_prop_rda, by = "margin")
+anova(perch_FA_prop_rda, by = "onedf")
+
 
 ### nMDS ----
 
@@ -889,7 +893,7 @@ zoop_FA_prop_PCA_site <- cbind(zoop_FA_prop_covariates,
 
 png("Zooplankton FA Proportions PCA.png",
     width = 19,
-    height= 13, 
+    height= 8, 
     units = "cm",
     res = 500)
 
@@ -903,7 +907,7 @@ ggplot() +
   geom_point(data = zoop_FA_prop_PCA_site,
              aes(x = PC1,
                  y = PC2,
-                 colour = as.factor(MPconcentration),
+                 fill = as.factor(MPconcentration),
                  shape = as.factor(date)),
              size = 2,
              alpha = 0.75) +
@@ -914,11 +918,12 @@ ggplot() +
             alpha = 0.95,
             size = 7 / .pt,
             colour = "black") +
-  scale_colour_viridis_d(name =
-                           expression(paste("Exposure Concentration (MPs" ~
-                                              L ^ -1 * ")")),
-                         direction = -1) +
-  scale_shape(name = "Date") +
+  scale_fill_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "inferno") +
+  scale_shape_manual(name = "Date",
+                     values = c(21:23)) +
   labs(x = "PC1",
        y = "PC2") +
   theme1 +
@@ -946,8 +951,9 @@ zoop_FA_prop_rda3 <-
       scale. = FALSE,
       data = zoop_FA_prop_covariates)
 
-anova(zoop_FA_prop_rda, zoop_FA_prop_rda2)  # date is significant
-anova(zoop_FA_prop_rda, zoop_FA_prop_rda3)  # treatment is not
+anova(zoop_FA_prop_rda, by = "term")
+anova(zoop_FA_prop_rda, by = "margin")
+anova(zoop_FA_prop_rda, by = "onedf")
 
 ### nMDS ----
 
