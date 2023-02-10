@@ -15,12 +15,12 @@ theme1 <-
   theme_bw() +
   theme(
     panel.spacing = unit(1, "lines"),
-    text = element_text(size = 7,
+    text = element_text(size = 18,
                         family = "serif"),
-    axis.text = element_text(size = 7),
+    axis.text = element_text(size = 18),
     strip.background = element_blank(),
-    strip.text = element_text(size = 7),
-    legend.text = element_text(size = 7),
+    strip.text = element_text(size = 20),
+    legend.text = element_text(size = 18),
     panel.grid = element_blank()
   )
 
@@ -228,8 +228,8 @@ trimmed_perch_FA <-
   data.frame(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] %>% 
                select(where(function(x){mean(x) >= 0.01})))
 
-trimmed_perch_FA <- 
-  trimmed_perch_FA / rowSums(trimmed_perch_FA)
+# trimmed_perch_FA <- 
+#   trimmed_perch_FA / rowSums(trimmed_perch_FA)
 
 perch_FA_prop_covariates <- perch_FA_prop2[,c(1:3,51:67),]
 
@@ -315,7 +315,7 @@ dev.off()
 ### RDA ----
 
 perch_FA_prop_rda <- 
-  rda(trimmed_perch_FA_clr ~ as.factor(MPconcentration) + body.weight,
+  rda(trimmed_perch_FA_clr ~ log(MPconcentration + 1) + body.weight,
       scale. = FALSE,
       data = perch_FA_prop_covariates)
 
@@ -324,6 +324,191 @@ summary(perch_FA_prop_rda)
 anova(perch_FA_prop_rda, by = "term")
 anova(perch_FA_prop_rda, by = "margin")
 anova(perch_FA_prop_rda, by = "onedf")
+
+### CCA ----
+
+perch_FA_prop_covariates$corral <- as.factor(perch_FA_prop_covariates$corral)
+
+perch_FA_prop_cca <- 
+  cca(trimmed_perch_FA ~ corral + body.weight,
+      scale. = FALSE,
+      data = perch_FA_prop_covariates)
+
+summary(perch_FA_prop_cca)
+
+anova(perch_FA_prop_cca, by = "term")
+anova(perch_FA_prop_cca, by = "margin")
+anova(perch_FA_prop_cca, by = "onedf")
+
+plot(perch_FA_prop_cca, scaling = "symmetric")
+
+# Bar plot of relative eigenvalues
+barplot(as.vector(perch_FA_prop_cca$CA$eig)/sum(perch_FA_prop_cca$CA$eig))
+
+# Calculate percentage of variance explained by first 2 aaxes
+sum((as.vector(perch_FA_prop_cca$CA$eig)/sum(perch_FA_prop_cca$CA$eig))[1:2])
+
+summary(perch_FA_prop_cca)
+
+# 'Site' scores
+perch_FA_prop_cca_site <- 
+  as.data.frame(scores(perch_FA_prop_cca, display = "site",
+                       scaling = "symmetric"))
+
+# 'Species' scores
+perch_FA_prop_cca_species <- 
+  as.data.frame(scores(perch_FA_prop_cca, display = "species",
+                       scaling = "symmetric"))
+
+trimmed.FA.names <- 
+  c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "18:2(n-6)", 
+    "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", "18:4(n-3)", "20:5(n-3)", 
+    "22:5(n-3)", "22:6n-3")
+
+perch_FA_prop_cca_species$FA <- trimmed.FA.names
+
+perch_FA_prop_cca_site <- cbind(perch_FA_prop_covariates,
+                                perch_FA_prop_cca_site[, 1:2])
+
+perch_FA_prop_cca_centroids <- 
+  as.data.frame(scores(perch_FA_prop_cca, display = "cn",
+                       scaling = "symmetric"))
+
+perch_FA_prop_cca_centroids$vars <- c("0(A)",
+                                      "414",
+                                      "29,240",
+                                      "100",
+                                      "6",
+                                      "7,071",
+                                      "0(B)",
+                                      "1,710")
+
+perch_FA_prop_cca_centroids$vars <-
+  factor(perch_FA_prop_cca_centroids$vars,
+         levels = c("0(A)",
+                    "0(B)",
+                    "6",
+                    "100",
+                    "414",
+                    "1,710",
+                    "7,071",
+                    "29,240"))
+
+perch_FA_prop_cca_centroids$corral <- as.factor(LETTERS[2:9])
+perch_FA_prop_cca_centroids <-
+  perch_FA_prop_cca_centroids %>% 
+  rename(cCCA1 = CCA1,
+         cCCA2 = CCA2)
+
+perch_FA_prop_cca_site <-
+  left_join(perch_FA_prop_cca_site,
+            perch_FA_prop_cca_centroids,
+            by = "corral")
+
+#### Plot ----
+
+png("Perch FA Proportions CCA Spider.png",
+    width = 30,
+    height= 18, 
+    units = "cm",
+    res = 500)
+
+ggplot() +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_segment(data = perch_FA_prop_cca_site,
+             aes(x = cCCA1,
+                 y = cCCA2,
+                 xend = CCA1,
+                 yend = CCA2,
+                 colour = vars),
+             alpha = 0.7,
+             linewidth = 1) +
+  geom_point(data = perch_FA_prop_cca_site,
+               aes(x = cCCA1,
+                   y = cCCA2,
+                   fill = vars),
+               size = 4,
+             shape = 21) +
+  geom_text(data = perch_FA_prop_cca_species,
+            aes(x = CCA1, 
+                y = CCA2, 
+                label = FA),
+            size = 14 / .pt,
+            colour = "black") +
+  scale_colour_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "inferno") +
+  scale_fill_viridis_d(name =
+                           expression(paste("Exposure Concentration (MPs" ~
+                                              L ^ -1 * ")")),
+                         option = "inferno") +
+  labs(x = "CCA1", 
+       y = "CCA2") +
+  theme1 +
+  theme(legend.key.size = unit(0.2, "cm"),
+        legend.spacing = unit(0, "cm"))
+
+dev.off()
+
+
+png("Perch FA Proportions CCA.png",
+    width = 30,
+    height= 18, 
+    units = "cm",
+    res = 500)
+
+ggplot() +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_point(data = perch_FA_prop_cca_site,
+             aes(x = CCA1,
+                 y = CCA2,
+                 fill = as.factor(MPconcentration)),
+             size = 4,
+             alpha = 0.7,
+             shape = 21) +
+  geom_segment(data = perch_FA_prop_cca_biplot,
+               aes(x = 0,
+                   y = 0,
+                   xend = CCA1, 
+                   yend = CCA2),
+               alpha = 0.5,
+               colour = "purple4",
+               arrow = arrow(length=unit(0.5, 'cm'))) +
+  geom_text(data = perch_FA_prop_cca_species,
+            aes(x = CCA1, 
+                y = CCA2, 
+                label = FA),
+            size = 14 / .pt,
+            colour = "black") +
+  geom_text(data = perch_FA_prop_cca_biplot,
+            aes(x = CCA1+0.3, 
+                y = CCA2+0.1, 
+                label = vars),
+            alpha = 0.95,
+            size = 16 / .pt,
+            colour = "purple4") +
+  scale_fill_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "inferno") +
+  labs(x = "CCA1", 
+       y = "CCA2") +
+  theme1 +
+  theme(legend.key.size = unit(0.2, "cm"),
+        legend.spacing = unit(0, "cm"))
+
+dev.off()
 
 
 ### nMDS ----
