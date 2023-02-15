@@ -407,9 +407,11 @@ perch_FA_prop_cca_site <-
 
 #### Plot ----
 
+
+
 png("Perch FA Proportions CCA Spider.png",
-    width = 30,
-    height= 18, 
+    width = 23,
+    height= 20, 
     units = "cm",
     res = 500)
 
@@ -426,33 +428,40 @@ ggplot() +
                  xend = CCA1,
                  yend = CCA2,
                  colour = vars),
-             alpha = 0.7,
-             linewidth = 1) +
+             alpha = 0.75,
+             linewidth = 1.25,
+             arrow = arrow(angle = 20,
+                           length = unit(0.25, "cm"),
+                           type = "open")) +
   geom_point(data = perch_FA_prop_cca_site,
                aes(x = cCCA1,
                    y = cCCA2,
                    fill = vars),
-               size = 4,
-             shape = 21) +
+               size = 6,
+             shape = 21,
+             alpha = 0.95,
+             colour = "white") +
   geom_text(data = perch_FA_prop_cca_species,
             aes(x = CCA1, 
                 y = CCA2, 
                 label = FA),
-            size = 14 / .pt,
-            colour = "black") +
+            size = 20 / .pt,
+            colour = "purple3") +
   scale_colour_viridis_d(name =
                          expression(paste("Exposure Concentration (MPs" ~
                                             L ^ -1 * ")")),
-                       option = "inferno") +
+                       option = "rocket") +
   scale_fill_viridis_d(name =
                            expression(paste("Exposure Concentration (MPs" ~
                                               L ^ -1 * ")")),
-                         option = "inferno") +
+                         option = "rocket") +
   labs(x = "CCA1", 
        y = "CCA2") +
   theme1 +
   theme(legend.key.size = unit(0.2, "cm"),
-        legend.spacing = unit(0, "cm"))
+        legend.spacing = unit(0, "cm"),
+        legend.position = "bottom",
+        panel.background = element_rect(fill = "grey95"))
 
 dev.off()
 
