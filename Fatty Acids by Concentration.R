@@ -402,8 +402,7 @@ perchHUFA_sim$lower <- perchHUFA_pred$fit - 1.96*perchHUFA_pred$se.fit
 ### Plot ----
 
 pal1 <- 
-  colorRampPalette(c("#EBEA9A", "#E4C008", "#A17244", "#42511A", 
-                     "#1B334D", "#151918"))(5)
+  viridisLite::viridis(n = 5)
 
 colours <- c("LA" = pal1[1], 
              "ARA" = pal1[2],
