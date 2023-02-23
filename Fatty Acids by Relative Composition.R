@@ -407,7 +407,7 @@ perch_FA_prop_cca_site <-
 #### Plot ----
 
 pal3 <-
-  colorRampPalette(c("lightyellow2", "tan2", "red4"))(8)
+  colorRampPalette(c("lightyellow2", "tan2", "red4"))(7)
 
 png("Perch FA Proportions CCA Spider.png",
     width = 23.5,
@@ -427,7 +427,7 @@ ggplot() +
                  y = cCCA2,
                  xend = CCA1,
                  yend = CCA2,
-                 colour = vars),
+                 colour = as.factor(MPconcentration)),
              alpha = 0.75,
              linewidth = 1.25,
              arrow = arrow(angle = 20,
@@ -436,7 +436,7 @@ ggplot() +
   geom_point(data = perch_FA_prop_cca_site,
                aes(x = cCCA1,
                    y = cCCA2,
-                   fill = vars),
+                   fill = as.factor(MPconcentration)),
                size = 6,
              shape = 21,
              alpha = 0.95,
