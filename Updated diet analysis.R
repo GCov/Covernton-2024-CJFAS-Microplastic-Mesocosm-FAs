@@ -70,6 +70,18 @@ ggplot(data = perch_diet,
                      breaks = c(0, 1, 10, 100, 1000, 10000, 30000)) +
   theme1
 
+# Pupal chironomids
+
+ggplot(data = perch_diet,
+       aes(x = MPconcentration,
+           y = chironomid.pupa)) +
+  geom_point() +
+  labs(x = expression(paste("Dose (particles"~L^-1*")")),
+       y = "Number of  animals in stomach") +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 1, 10, 100, 1000, 10000, 30000)) +
+  theme1
+
 ## Put data into long format
 
 perch_diet_long <- 
@@ -338,7 +350,7 @@ Y <- perch_diet[12:17]
 
 X <- perch_diet[,-c(12:17)]
 
-## HMSC model DO THIS ----
+## HMSC model ----
 
 design <- data.frame(corral = factor(perch_diet[,2]))
 rlevels <- HmscRandomLevel(units = design$corral)
@@ -346,11 +358,11 @@ rlevels <- HmscRandomLevel(units = design$corral)
 ### Specify model structure ----
 
 hmsc1 <- Hmsc(Y = Y,  # response data
-              XData = X,  # covariates
-              XFormula = ~Treatment,  # model formula
+              XData = X[,c(2:3,5:10)],  # covariates
+              XFormula = ~MPconcentration,  # model formula
               XScale = TRUE,  # scale covariates for fixed effects,
               studyDesign = design,
-              ranLevels = list(Corral = rlevels),
+              ranLevels = list(corral = rlevels),
               distr = "poisson")
 
 ### Run MCMC chains ----
@@ -358,9 +370,9 @@ hmsc1 <- Hmsc(Y = Y,  # response data
 set.seed(9648)
 
 run1 <- sampleMcmc(hmsc1,
-                   samples = 10000,
+                   samples = 50000,
                    transient = 1000,
-                   thin = 4,
+                   thin = 1,
                    nChains = 3,
                    nParallel = 3)
 
@@ -374,6 +386,9 @@ gelman.diag(post1$Beta,
             multivariate = FALSE)$psrf
 
 plot(post1$Beta)
+
+## Cladocerans maybe go up a bit with exposure.
+## Chironomid larvae go up with exposure
 
 
 ### Assess explanatory power ----
@@ -414,7 +429,7 @@ diss <- as.matrix(vegdist(rel_abund, method = "bray", na.rm = TRUE),
 
 dietnMDS <- metaMDS(Y2,
                     distance = "bray",
-                    k = 3,,
+                    k = 3,
                     autotransform = FALSE,
                     maxis = 999,
                     trymax = 250,
@@ -484,6 +499,10 @@ dev.off()
 
 ## CA ----
 
+# Make H the reference level
+
+X2$corral <- relevel(X2$corral, "H")
+
 diet_ca <- 
   cca(Y2 ~ corral + body.length,
       data = X2,
@@ -495,7 +514,7 @@ anova(diet_ca, by = "term")
 anova(diet_ca, by = "margin")
 anova(diet_ca, by = "onedf")
 
-plot(diet_ca, scaling = "symmetric")
+plot(diet_ca, scaling = "species")
 
 # Bar plot of relative eigenvalues
 barplot(as.vector(diet_ca$CA$eig)/sum(diet_ca$CA$eig))
@@ -527,7 +546,7 @@ diet_ca_cn <-
                     scaling = "symmetric")) 
 
 diet_ca_cn$corral <-
-  c(LETTERS[3:9])
+  c("H","C","D","E","F","G","I")
 
 diet_ca_cn <- left_join(diet_ca_cn, pop, by = "corral")
 
@@ -588,4 +607,4 @@ ggplot() +
 dev.off()
 
 ## No clear pattern with treatment, except pupal chironomids in E(100) and 
-## G (7071) and cyclopoid copepods in F(6)
+## G (7071) and cyclopoid copepods in F(6) and I(1710)

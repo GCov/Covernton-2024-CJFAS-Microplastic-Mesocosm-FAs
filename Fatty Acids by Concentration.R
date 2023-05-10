@@ -8,6 +8,19 @@ library(MuMIn)
 library(tidyr)
 library(vegan)
 
+theme1 <-
+  theme_bw() +
+  theme(
+    panel.spacing = unit(1, "lines"),
+    text = element_text(size = 7,
+                        family = "serif"),
+    axis.text = element_text(size = 7),
+    strip.background = element_blank(),
+    strip.text = element_text(size = 8),
+    legend.text = element_text(size = 8),
+    panel.grid = element_blank()
+  )
+
 FA.names <- c("12:0", "13:0", "14:0", "15:0", "16:0", "17:0", "18:0", "20:0", 
               "22:0", "24:0", "12:1", "14:1", "16:1n-7", "16:1n-9", "18:1n-7",
               "18:1n-9", "20:1n-9", "22:1n-9", "18:2n-6", "18:3n-6", "20:2n-6",
