@@ -684,7 +684,7 @@ perch_FA_conc_PCA_site <- cbind(perch_FA_conc_covariates,
 
 png("Perch FA Concentrations PCA.png",
     width = 19,
-    height= 14, 
+    height= 10, 
     units = "cm",
     res = 600)
 
