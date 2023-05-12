@@ -601,9 +601,13 @@ TukeyHSD(perch.betadisper)
 
 # No significant effect of MP concentration or body weight
 
-### Explore different indicators ----
+### Explore individual patterns ----
+
+#### Pairwise correlations ----
 
 pairs(trimmed_perch_FA)
+
+#### Look at short- vs. long-chain PUFAs ----
 
 trimmed_perch_FA2 <- 
   cbind(trimmed_perch_FA, perch_FA_prop_covariates)
@@ -634,7 +638,7 @@ ggplot(reduced_perch_FA2_long) +
                  y = value,
                  colour = FA),
               method = "lm") + 
-  facet_wrap(~ FA, scale = "free") +
+  facet_grid(sex ~ FA, scale = "free") +
   theme1
 
 ggplot(reduced_perch_FA2_long) +
@@ -645,7 +649,7 @@ ggplot(reduced_perch_FA2_long) +
                   y = value,
                   colour = FA),
               method = "lm") + 
-  facet_wrap(~ FA, scale = "free") +
+  facet_grid(sex ~ FA, scale = "free") +
   theme1
 
 ggplot(reduced_perch_FA2_long) +
@@ -659,31 +663,8 @@ ggplot(reduced_perch_FA2_long) +
   facet_wrap(~ FA, scale = "free") +
   theme1
 
-
 # Seems like bigger fish have proportionally less long-chain PUFAs and more 
-# short-chain PUFAs
-
-#### PUFAs ----
-
-perch_FA_prop_PUFA_mod1 <- 
-  glmmTMB(PUFAs ~ scaled.MPconcentration + scaled.body.weight,
-          data = perch_FA_prop2,
-          family = beta_family(link = "logit"))
-
-plot(simulateResiduals(perch_FA_prop_PUFA_mod1))
-
-summary(perch_FA_prop_PUFA_mod1)
-
-#### SFAs ----
-
-perch_FA_prop_SFA_mod1 <- 
-  glmmTMB(total_SFAs ~ scaled.MPconcentration,
-          data = perch_FA_prop2,
-          family = beta_family(link = "logit"))
-
-plot(simulateResiduals(perch_FA_prop_SFA_mod1))
-
-summary(perch_FA_prop_SFA_mod1)
+# short-chain PUFAs. Looks especially strong for gonad weight.
 
 
 
@@ -748,7 +729,7 @@ zoop_FA_prop_PCA_site <- cbind(zoop_FA_prop_covariates,
 
 png("Zooplankton FA Proportions PCA.png",
     width = 19,
-    height= 8, 
+    height= 12, 
     units = "cm",
     res = 500)
 
@@ -842,7 +823,7 @@ trimmed.FA.names.zoops <-
     "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", 
     "22:1(n-9)",  "18:2(n-6)", "18:(3n-6)", 
     "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
-    "18:4(n-3)", "20:5(n-3)", "22:6n-3")
+    "18:4(n-3)", "20:5(n-3)", "22:6(n-3)")
 
 zoop_FA_prop_cca_species$FA <- trimmed.FA.names.zoops
 
@@ -887,8 +868,8 @@ pal4 <-
   colorRampPalette(c("lightyellow2", "tan2", "red4"))(9)
 
 png("Zooplankton FA Proportions CCA.png",
-    width = 23,
-    height= 15, 
+    width = 12,
+    height= 8, 
     units = "cm",
     res = 500)
 
@@ -906,20 +887,20 @@ ggplot() +
                    colour = label),
                alpha = 0.25,
                linetype = "dashed",
-               linewidth = 0.6) +
+               linewidth = 0.5) +
   geom_point(data = zoop_FA_prop_cca_site,
              aes(x = CCA1,
                  y = CCA2,
                  fill = label,
                  shape = point),
-             size = 6,
+             size = 2,
              alpha = 0.75,
              colour = "grey30") +
   geom_text_repel(data = zoop_FA_prop_cca_species,
                   aes(x = CCA1,
                       y = CCA2,
                       label = FA),
-                  size = 16 / .pt,
+                  size = 7 / .pt,
                   colour = "blue3",
                   box.padding = 0) +
   scale_colour_manual(name =
@@ -1002,18 +983,17 @@ for(i in 1:length(unique(zoop_FA_prop_data.scores2$date))) {
 #### Plot ----
 
 png("Zooplankton Proportions MDS Plot.png",
-    width = 12,
-    height= 10, 
+    width = 19,
+    height= 12, 
     units = "cm",
-    res = 300)
+    res = 500)
 
 ggplot() +
   geom_polygon(data = zoop_FA_prop_hulls,
                aes(x = MDS1,
                    y = MDS2,
-                   fill = date),
-               colour = "black",
-               alpha = 0.3,
+                   colour = date),
+               alpha = 0.1,
                size = 1) +
   geom_segment(data = zoop_FA_variable_prop_scores,
                aes(x = 0, y = 0, xend = MDS1*0.9, yend = MDS2*0.9),
@@ -1029,9 +1009,9 @@ ggplot() +
              aes(x = MDS1,
                  y = MDS2,
                  shape = date,
-                 colour = MPconcentration),
+                 fill = MPconcentration),
              alpha = 0.75,
-             size = 1) +
+             size = 2) +
   geom_text(data = zoop_FA_variable_prop_scores,
             aes(x = MDS1, 
                 y = MDS2, 
@@ -1039,14 +1019,15 @@ ggplot() +
             alpha = 0.9,
             size = 7 / .pt,
             colour = "purple4") +
-  scale_colour_brewer(type = "seq",
-                      palette = "YlOrRd",
-                      name = 
-                        expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
-  scale_fill_brewer(type = "qual",
+  scale_fill_brewer(type = "seq",
+                    palette = "YlOrRd",
+                    name =
+                      expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
+  scale_colour_brewer(type = "qual",
                     palette = "Set3",
                       name = "Date") +
-  scale_shape(name = "Date") +
+  scale_shape_manual(name = "Date",
+                     values = c(21:23)) +
   theme1
 
 dev.off()
@@ -1077,160 +1058,123 @@ plot(zoop.betadisper)
 boxplot(zoop.betadisper)
 TukeyHSD(zoop.betadisper)
 
-### Dirichlet regression ----
+# Plot proportions of major groups ----
+## Fish food ----
 
-# Re-scale response so it sums to 1
+food_FA_prop_long <- 
+  food_FA_prop %>% 
+  pivot_longer(cols = c(17,26,35,45),
+               names_to = "FA")
 
-DR_zoop_Y <- DR_data(trimmed_zoop_FA)
+food_FA_prop_long$FA <- as.factor(food_FA_prop_long$FA)
 
-# Run model
+levels(food_FA_prop_long$FA) <-
+  c("MUFA",
+    "n-3 PUFA",
+    "n-6 PUFA",
+    "SFA")
 
-zoop_FA_dir_mod1 <-
-  DirichReg(DR_zoop_Y ~ log(MPconcentration + 1) * scaled.date|
-              scaled.date,
-            model = "alternative",
-            data = zoop_FA_prop)
-
-zoop_FA_dir_mod1
-summary(zoop_FA_dir_mod1)
-
-# Predict from original data
-
-zoop_FA_dir_predict1 <- 
-  exp(predict(zoop_FA_dir_mod1, mu = TRUE, phi = FALSE)) - 1
-
-zoop_FA_prop_end_predict <- 
-  cbind(zoop_FA_prop[,c(1:6,51:54)],
-        zoop_FA_dir_predict1)
-
-# Put predictions into long form
-
-zoop_FA_prop_end_predict_long <- 
-  zoop_FA_prop_end_predict %>%
-  pivot_longer(names(trimmed_zoop_FA),
-               names_to = "metric",
-               values_to = "value")
-
-zoop_FA_prop_end_predict_long$metric <- 
-  as.factor(zoop_FA_prop_end_predict_long$metric)
-
-# Put original data into long form
-
-zoop_FA_prop_long <- 
-  cbind(zoop_FA_prop[,c(1:6,51:54)],
-        trimmed_zoop_FA) %>%
-  pivot_longer(names(trimmed_zoop_FA),
-               names_to = "metric",
-               values_to = "value")
-
-
-#### Plot predictions ----
-
-png("Zooplankton Dirichlet Plot.png",
-    width = 40,
-    height= 70, 
-    units = "cm",
-    res = 300)
-
-ggplot() +
-  geom_line(data = zoop_FA_prop_end_predict_long,
-            aes(x = MPconcentration,
-                y = value),
-            colour = "red",
-            size = 1.5) +
-  geom_point(data = zoop_FA_prop_long,
-             aes(x = zoop_FA_prop_end_predict_long$MPconcentration,
-                 y = value), 
-             size = 3) +
-  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
-       y = "Proportion Fatty Acid") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  facet_grid(metric ~ date) +
-  theme1
-
-dev.off()
-
-
-# Explore different indicators ----
-
-# Scale and center zooplankton date
-
-zoop_FA_prop$date2 <- 
-  as.numeric(scale(as.numeric(zoop_FA_prop$date), center = TRUE))
-
-## Zooplankton PUFAs ----
-
-zoop_FA_prop_PUFA_mod1 <- 
-  glmmTMB(PUFAs ~ log(MPconcentration + 1),
-          data = subset(zoop_FA_prop, date > "2021-08-01"),
-          family = beta_family(link = "logit"))
-
-plotResiduals(zoop_FA_prop_PUFA_mod1)
-
-summary(zoop_FA_prop_PUFA_mod1)
-
-## Zooplankton n-6 PUFAs ----
-
-zoop_FA_prop_n.6.PUFA_mod1 <- 
-  glmmTMB(total_N.6_PUFAs ~ log(MPconcentration + 1),
-          data = subset(zoop_FA_prop, date > "2021-08-01"),
-          family = beta_family(link = "logit"))
-
-plotResiduals(zoop_FA_prop_n.6.PUFA_mod1)
-
-summary(zoop_FA_prop_n.6.PUFA_mod1)
-
-## Zooplankton n-3 PUFAs ----
-
-zoop_FA_prop_n.3.PUFA_mod1 <- 
-  glmmTMB(total_N.3_PUFAs ~ log(MPconcentration + 1),
-          data = subset(zoop_FA_prop, date > "2021-08-01"),
-          family = beta_family(link = "logit"))
-
-plotResiduals(zoop_FA_prop_n.3.PUFA_mod1)
-
-summary(zoop_FA_prop_n.3.PUFA_mod1)
-
-
-# Fish food ----
-
-png("Fish Food Essential FAs Proportionss Plot.png",
+png("Fish Food FAs Proportionss Plot.png",
     width = 9,
     height= 9, 
     units = "cm",
-    res = 600)
+    res = 500)
 
-ggplot(food_FA_prop) +
-  geom_violin(aes(x = 1,
-                  y = C_18.2n.6,
-                  fill = "LA"),
-              size = 0.25) +
-  geom_violin(aes(x = 2,
-                  y = C_20.4n.6,
-                  fill = "ARA"),
-              size = 0.25) +
-  geom_violin(aes(x = 3,
-                  y = C_18.3n.3,
-                  fill = "ALA"),
-              size = 0.5) +
-  geom_violin(aes(x = 4,
-                  y = C_20.5n.3,
-                  fill = "EPA"),
-              size = 0.5) +
-  geom_violin(aes(x = 5,
-                  y = C_22.6n.3,
-                  fill = "DHA"),
-              size = 0.25) +
-  labs(x = "",
-       y = "Proportion FA") +
-  scale_fill_manual(values = colours,
-                    name = "") +
+ggplot(food_FA_prop_long) +
+  geom_col(aes(x = ID,
+               y = value,
+               fill = FA)) +
+  scale_fill_viridis_d(option = "turbo",
+                       name = "") +
+  labs(x = "Sample",
+       y = "Proportion") +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,1)) +
   theme1 +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        legend.position = "top")
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 1))
 
 dev.off()
 
+## Perch ----
+
+perch_FA_prop_long <- 
+  perch_FA_prop2 %>% 
+  pivot_longer(cols = c(17,26,35,45),
+               names_to = "FA")
+
+perch_FA_prop_long$FA <- as.factor(perch_FA_prop_long$FA)
+
+levels(perch_FA_prop_long$FA) <-
+  c("MUFA",
+    "n-3 PUFA",
+    "n-6 PUFA",
+    "SFA")
+
+png("Perch FAs Proportionss Plot.png",
+    width = 12,
+    height= 9, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA_prop_long) +
+  geom_col(aes(x = ID,
+               y = value,
+               fill = FA)) +
+  scale_fill_viridis_d(option = "turbo",
+                       name = "") +
+  labs(x = "Sample",
+       y = "Proportion") +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,1)) +
+  facet_wrap(~MPconcentration,
+             scales = "free_x",
+             nrow = 2) +
+  theme1 +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 1))
+
+dev.off()
+
+## Zooplankton ----
+
+zoop_FA_prop_long <- 
+  zoop_FA_prop %>% 
+  pivot_longer(cols = c(17,26,35,45),
+               names_to = "FA")
+
+zoop_FA_prop_long$FA <- as.factor(zoop_FA_prop_long$FA)
+
+levels(zoop_FA_prop_long$FA) <-
+  c("MUFA",
+    "n-3 PUFA",
+    "n-6 PUFA",
+    "SFA")
+
+png("Zooplankton FAs Proportionss Plot.png",
+    width = 19,
+    height= 12, 
+    units = "cm",
+    res = 500)
+
+ggplot(zoop_FA_prop_long) +
+  geom_col(aes(x = ID,
+               y = value,
+               fill = FA,
+               colour = as.factor(date)),
+           size = 0.5) +
+  scale_fill_viridis_d(option = "turbo",
+                       name = "") +
+  scale_colour_viridis_d(name = "Date") +
+  labs(x = "Sample",
+       y = "Proportion") +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,1)) +
+  facet_wrap(~ MPconcentration,
+             scales = "free_x") +
+  theme1 +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 1))
+
+dev.off()
 

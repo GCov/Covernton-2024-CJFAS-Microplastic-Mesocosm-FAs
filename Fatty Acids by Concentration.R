@@ -76,53 +76,6 @@ perch_FA2 <- left_join(perch_FA, perch_biometrics,
 perch_FA2$date2 <- 
   as.numeric(scale(as.numeric(perch_FA2$date), center = TRUE))
 
-# Effect of MP exposure on body weight----
-
-concentrations <- 
-  perch_FA2 %>% 
-  group_by(corral) %>% 
-  summarize(MPconcentration = unique(MPconcentration)[1])
-
-perch_biometrics2 <- left_join(perch_biometrics, concentrations, by = "corral")
-
-perchweightmod1 <- glmmTMB(body.weight ~ 
-                             log(MPconcentration + 1) +
-                             (1 | corral),
-                           data = subset(perch_biometrics2,
-                                         !is.na(body.weight)))
-
-plotResiduals(simulateResiduals(perchweightmod1))
-
-summary(perchweightmod1)  # no effect
-
-perchweight_predict <- predict(perchweightmod1,
-                                re.form = NA, 
-                                se.fit = TRUE)
-
-perchweight_predict$upper <- with(perchweight_predict,
-                                   fit + 1.98 * se.fit)
-
-perchweight_predict$lower <- with(perchweight_predict,
-                                   fit - 1.98 * se.fit)
-
-
-ggplot(subset(perch_biometrics2,
-              !is.na(body.weight))) +
-  geom_point(aes(x = MPconcentration,
-                 y = body.weight)) +
-  geom_ribbon(aes(x = MPconcentration,
-                  ymin = perchweight_predict$lower,
-                  ymax = perchweight_predict$upper),
-              alpha = 0.3) +
-  geom_line(aes(x = MPconcentration,
-                y = perchweight_predict$fit),
-            size = 1) +
-  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
-       y = "Body Weight (g)") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  theme1
-
 # Add population data ----
 
 fish_pop <- read.csv("fish_pop.csv", header = TRUE)
@@ -142,7 +95,6 @@ ggplot(fish_pop) +
   theme1
 
 # Combine with FA data
-
 
 perch_FA2 <- left_join(perch_FA2, fish_pop, 
                        by = c("corral", "MPconcentration"))
