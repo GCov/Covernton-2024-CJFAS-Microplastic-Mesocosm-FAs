@@ -471,7 +471,7 @@ perch_FA_prop_diss <- as.matrix(vegdist(trimmed_perch_FA,
                                    na.rm = TRUE), 
                            labels = TRUE)
 
-NMDS_scree(perch_FA_prop_diss)  # 3 dimensions looks good
+# NMDS_scree(perch_FA_prop_diss)  # 3 dimensions looks good
 
 set.seed(5465)
 
@@ -623,10 +623,11 @@ levels(trimmed_perch_FA2_long$FA)
 
 reduced_perch_FA2_long <-
   trimmed_perch_FA2_long %>% 
-  filter(FA == "C_18.2n.6" |
+  filter(FA == "C_18.1n.9" |
+           FA == "C_18.2n.6" |
            FA == "C_18.3n.3" |
+           FA == "C_18.4n.3" |
            FA == "C_20.4n.6" |
-           FA == "C_22.5n.3" |
            FA == "C_22.5n.6" |
            FA == "C_22.6n.3" )
 
@@ -663,9 +664,7 @@ ggplot(reduced_perch_FA2_long) +
   facet_wrap(~ FA, scale = "free") +
   theme1
 
-# Seems like bigger fish have proportionally less long-chain PUFAs and more 
-# short-chain PUFAs. Looks especially strong for gonad weight.
-
+# Hard to figure out what's going on here
 
 
 ## Zooplankton analyses ----
