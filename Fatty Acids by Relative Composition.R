@@ -325,11 +325,19 @@ anova(perch_FA_prop_rda, by = "onedf")
 
 ### CCA ----
 
+# Add diet data
+
+perch_FA_prop_covariates <- 
+  left_join(perch_FA_prop_covariates, 
+            diet_summary, 
+            by = "corral")
+
 perch_FA_prop_covariates$corral <- as.factor(perch_FA_prop_covariates$corral)
 
 perch_FA_prop_cca <- 
-  cca((trimmed_perch_FA) ~ corral + body.weight,
-      scale. = FALSE,
+  cca((trimmed_perch_FA) ~ 
+        corral + 
+        body.weight,
       data = perch_FA_prop_covariates)
 
 summary(perch_FA_prop_cca)

@@ -436,7 +436,7 @@ dietnMDS <- metaMDS(Y2,
                     wascores =  TRUE,
                     expand = TRUE)
 
-screeplot(dietnMDS)
+# screeplot(dietnMDS)
 
 # Shepards test/goodness of fit
 goodness(dietnMDS)
@@ -608,3 +608,14 @@ dev.off()
 
 ## No clear pattern with treatment, except pupal chironomids in E(100) and 
 ## G (7071) and cyclopoid copepods in F(6) and I(1710)
+
+
+# Summarize diet by corral
+
+diet_summary <- 
+  perch_diet_long %>% 
+  group_by(corral, taxa) %>% 
+  summarize(mean = mean(count)) %>% 
+  ungroup() %>% 
+  pivot_wider(values_from = mean,
+              names_from = taxa)
