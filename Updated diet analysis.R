@@ -516,7 +516,7 @@ anova(diet_ca, by = "term")
 anova(diet_ca, by = "margin")
 anova(diet_ca, by = "onedf")
 
-plot(diet_ca, scaling = "species")
+plot(diet_ca, scaling = "symmetric")
 
 # Bar plot of relative eigenvalues
 barplot(as.vector(diet_ca$CA$eig)/sum(diet_ca$CA$eig))
@@ -583,7 +583,8 @@ ggplot() +
   geom_jitter(data = diet_ca_site,
               aes(x = CCA1,
                   y = CCA2,
-                  fill = label),
+                  fill = reorder(label,
+                                 MPconcentration)),
               size = 3,
               alpha = 0.75,
               width = 0.2,
@@ -636,3 +637,26 @@ diet_summary <-
   ungroup() %>% 
   pivot_wider(values_from = mean,
               names_from = taxa)
+
+# Look at biometric effects on Copepod ingestion ----
+
+perch_diet$stdate <-
+  as.numeric(as.Date(perch_diet$collection.date, 
+                     format = "%d-%m-%y")) - 
+  min(as.numeric(as.Date(perch_diet$collection.date, 
+                         format = "%d-%m-%y")))
+
+copepodmod1 <-
+  glmmTMB(log(cyclopoida + 1) ~ 
+            log(body.length) +
+            stdate +
+            (1 | corral), 
+          data = perch_diet)
+
+plot(simulateResiduals(copepodmod1))
+
+plotResiduals(copepodmod1, perch_diet$stdate)
+
+summary(copepodmod1)
+
+## Bascially can't get a well-fitting model from the data

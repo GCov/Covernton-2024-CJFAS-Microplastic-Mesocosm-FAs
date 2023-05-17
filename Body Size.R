@@ -139,3 +139,14 @@ ggplot(perch2021) +
 
 
 ## Neither fork length nor condition affected by MP concentration
+
+## Gonad weight
+
+fish2021.mod2 <-
+  aov(gonad.weight ~ corral,
+      data = perch2021)
+
+summary(fish2021.mod2)
+
+plot(residuals(fish2021.mod1) ~ fitted(fish2021.mod1))
+abline(0,0)
