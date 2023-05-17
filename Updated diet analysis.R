@@ -13,13 +13,15 @@ theme1 <-
   theme_bw() +
   theme(
     panel.spacing = unit(1, "lines"),
-    text = element_text(size = 7,
+    text = element_text(size = 9,
                         family = "serif"),
-    axis.text = element_text(size = 7),
+    axis.text = element_text(size = 9),
     strip.background = element_blank(),
     strip.text = element_text(size = 8),
-    legend.text = element_text(size = 8),
-    panel.grid = element_blank()
+    legend.text = element_text(size = 10),
+    panel.grid = element_blank(),
+    legend.key.size = unit(0.4, "cm"),
+    legend.spacing = unit(0, "cm")
   )
 
 
@@ -113,10 +115,10 @@ levels(perch_diet_long$treatment) <-
 ## Plot by taxa ----
 
 png("Perch Diet Plot by Taxa.png",
-    width = 12,
+    width = 18,
     height= 8, 
     units = "cm",
-    res = 500)
+    res = 600)
 
 ggplot(perch_diet_long) +
   geom_col(aes(x = ID,
@@ -541,6 +543,18 @@ diet_ca_species$Taxa <- c("Chironomid Pupae",
 
 diet_ca_site <- cbind(X2, diet_ca_site[, 1:2])
 
+diet_ca_site$label <- diet_ca_site$corral
+
+levels(diet_ca_site$label) <-
+  c(c("0(H)",
+      "0(B)",
+      "414(C)",
+      "29,240(D)",
+      "100(E)",
+      "6(F)",
+      "7,071(G)",
+      "1,710(I)"))
+
 diet_ca_cn <- 
   data.frame(scores(diet_ca, display = "cn",
                     scaling = "symmetric")) 
@@ -552,10 +566,10 @@ diet_ca_cn <- left_join(diet_ca_cn, pop, by = "corral")
 
 #### Plot ----
 png("Perch Diet CA.png",
-    width = 12,
-    height= 8, 
+    width = 18.2,
+    height = 10, 
     units = "cm",
-    res = 500)
+    res = 600)
 
 set.seed(6372)
 
@@ -569,8 +583,8 @@ ggplot() +
   geom_jitter(data = diet_ca_site,
               aes(x = CCA1,
                   y = CCA2,
-                  fill = as.factor(MPconcentration)),
-              size = 2,
+                  fill = label),
+              size = 3,
               alpha = 0.75,
               width = 0.2,
               height = 0.2,
@@ -584,7 +598,8 @@ ggplot() +
                linewidth = 0.75,
                arrow = arrow(angle = 20,
                              length = unit(0.25, "cm"),
-                             type = "open")) +
+                             type = "open"),
+               colour = "blue3") +
   geom_text(data = diet_ca_species,
             aes(x = 1.1*CCA1,
                 y = 1.1*CCA2,
@@ -595,9 +610,11 @@ ggplot() +
             aes(x = CCA1,
                 y = CCA2,
                 label = corral),
-            size = 7 / .pt,
-            colour =  "purple3") +
-  scale_fill_viridis_d(name = "Treatment") +
+            size = 14 / .pt,
+            colour =  "purple2") +
+  scale_fill_viridis_d(name = expression(paste("Exposure Concentration (MPs" ~
+                                                 L ^ -1 * ")")),
+                       option = "plasma") +
   coord_cartesian(xlim = c(-17,1),
                   ylim = c(-1.5,4.5)) +
   theme1 +

@@ -15,13 +15,15 @@ theme1 <-
   theme_bw() +
   theme(
     panel.spacing = unit(1, "lines"),
-    text = element_text(size = 7,
+    text = element_text(size = 9,
                         family = "serif"),
-    axis.text = element_text(size = 7),
+    axis.text = element_text(size = 9),
     strip.background = element_blank(),
     strip.text = element_text(size = 8),
-    legend.text = element_text(size = 8),
-    panel.grid = element_blank()
+    legend.text = element_text(size = 10),
+    panel.grid = element_blank(),
+    legend.key.size = unit(0.4, "cm"),
+    legend.spacing = unit(0, "cm")
   )
 
 # Load data ----
@@ -415,10 +417,10 @@ pal3 <-
   colorRampPalette(c("lightyellow2", "tan2", "red4"))(7)
 
 png("Perch FA Proportions CCA Spider.png",
-    width = 12,
+    width = 18,
     height= 10, 
     units = "cm",
-    res = 500)
+    res = 600)
   
 ggplot() +
   geom_hline(aes(yintercept = 0),
@@ -432,7 +434,7 @@ ggplot() +
                  y = cCCA2,
                  xend = CCA1,
                  yend = CCA2,
-                 colour = as.factor(MPconcentration)),
+                 colour = vars),
              alpha = 0.75,
              linewidth = 0.5,
              arrow = arrow(angle = 20,
@@ -441,7 +443,7 @@ ggplot() +
   geom_point(data = perch_FA_prop_cca_site,
                aes(x = cCCA1,
                    y = cCCA2,
-                   fill = as.factor(MPconcentration)),
+                   fill = vars),
                size = 2,
              shape = 21,
              alpha = 0.95,
@@ -450,23 +452,22 @@ ggplot() +
                   aes(x = CCA1,
                       y = CCA2,
                       label = FA),
-                  size = 7 / .pt,
+                  size = 10 / .pt,
                   colour = "blue3",
                   box.padding = 0) +
-  scale_colour_manual(name =
-                         expression(paste("Exposure Concentration (MPs" ~
-                                            L ^ -1 * ")")),
-                      values = pal3) +
-  scale_fill_manual(name =
+  scale_colour_viridis_d(name =
                            expression(paste("Exposure Concentration (MPs" ~
                                               L ^ -1 * ")")),
-                    values = pal3) +
+                         option = "plasma") +
+  scale_fill_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "plasma") +
   labs(x = "CCA1", 
        y = "CCA2") +
   theme1 +
   theme(legend.key.size = unit(0.2, "cm"),
-        legend.spacing = unit(0, "cm"),
-        legend.position = "bottom")
+        legend.spacing = unit(0, "cm"))
 
 dev.off()
 
@@ -724,8 +725,8 @@ zoop_FA_prop_PCA_species <- data.frame(zoop_FA_prop_pca$CA$v)
 
 trimmed.FA.names.zoops <- 
   c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "22:1(n-9)",
-    "18:2(n-6)", "18:(3n-6)", "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
-    "18:4(n-3)", "20:5(n-3)", "22:6n-3")
+    "18:2(n-6)", "18:3(n-6)", "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
+    "18:4(n-3)", "20:5(n-3)", "22:6(n-3)")
 
 zoop_FA_prop_PCA_species$FA <- trimmed.FA.names.zoops
 
@@ -805,6 +806,8 @@ zoop_FA_prop_cca <-
       scale. = FALSE,
       data = zoop_FA_prop_covariates)
 
+plot(zoop_FA_prop_cca, scaling = 3)
+
 screeplot(zoop_FA_prop_cca)
 
 summary(zoop_FA_prop_cca)
@@ -827,8 +830,8 @@ zoop_FA_prop_cca_species <-
 
 trimmed.FA.names.zoops <- 
   c("14:0", "16:0", "18:0", 
-    "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", 
-    "22:1(n-9)",  "18:2(n-6)", "18:(3n-6)", 
+    "16:1(n-7)", "18:1(n-7)", "18:1(n-9)", 
+    "22:1(n-9)",  "18:2(n-6)", "18:3(n-6)", 
     "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
     "18:4(n-3)", "20:5(n-3)", "22:6(n-3)")
 
@@ -875,10 +878,10 @@ pal4 <-
   colorRampPalette(c("lightyellow2", "tan2", "red4"))(9)
 
 png("Zooplankton FA Proportions CCA.png",
-    width = 12,
+    width = 19,
     height= 8, 
     units = "cm",
-    res = 500)
+    res = 600)
 
 ggplot() +
   geom_hline(aes(yintercept = 0),
@@ -907,23 +910,23 @@ ggplot() +
                   aes(x = CCA1,
                       y = CCA2,
                       label = FA),
-                  size = 7 / .pt,
+                  size = 10 / .pt,
                   colour = "blue3",
                   box.padding = 0) +
-  scale_colour_manual(name =
-                        expression(paste("Exposure Concentration (MPs" ~
-                                           L ^ -1 * ")")),
-                      values = pal4) +
-  scale_fill_manual(name =
-                      expression(paste("Exposure Concentration (MPs" ~
-                                         L ^ -1 * ")")),
-                    values = pal4) +
+  scale_colour_viridis_d(name =
+                           expression(paste("Exposure Concentration (MPs" ~
+                                              L ^ -1 * ")")),
+                         option = "plasma") +
+  scale_fill_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "plasma") +
   scale_shape_manual(values = c(21,24,22),
                      name = "Experimental Time Point") +
   labs(x = "CCA1", 
        y = "CCA2") +
   theme1 +
-  theme(legend.key.size = unit(0.2, "cm"),
+  theme(legend.key.size = unit(0.4, "cm"),
         legend.spacing = unit(0, "cm"))
 
 dev.off()
@@ -936,8 +939,6 @@ zoop_FA_prop_diss <- as.matrix(vegdist(trimmed_zoop_FA,
                                   method = "bray", 
                                   na.rm = TRUE), 
                           labels = TRUE)
-
-NMDS_scree(zoop_FA_prop_diss)  # 4 dimensions looks good
 
 set.seed(5465)
 
@@ -1082,10 +1083,10 @@ levels(food_FA_prop_long$FA) <-
     "SFA")
 
 png("Fish Food FAs Proportionss Plot.png",
-    width = 9,
-    height= 9, 
+    width = 8.84,
+    height= 4, 
     units = "cm",
-    res = 500)
+    res = 600)
 
 ggplot(food_FA_prop_long) +
   geom_col(aes(x = ID,
@@ -1119,10 +1120,10 @@ levels(perch_FA_prop_long$FA) <-
     "SFA")
 
 png("Perch FAs Proportionss Plot.png",
-    width = 12,
-    height= 9, 
+    width = 18,
+    height= 8.84, 
     units = "cm",
-    res = 500)
+    res = 600)
 
 ggplot(perch_FA_prop_long) +
   geom_col(aes(x = ID,
@@ -1159,20 +1160,21 @@ levels(zoop_FA_prop_long$FA) <-
     "SFA")
 
 png("Zooplankton FAs Proportionss Plot.png",
-    width = 19,
+    width = 18,
     height= 12, 
     units = "cm",
-    res = 500)
+    res = 600)
 
 ggplot(zoop_FA_prop_long) +
-  geom_col(aes(x = ID,
+  geom_col(aes(x = reorder(ID, date),
                y = value,
                fill = FA,
                colour = as.factor(date)),
-           size = 0.5) +
+           size = 0.75) +
   scale_fill_viridis_d(option = "turbo",
                        name = "") +
-  scale_colour_viridis_d(name = "Date") +
+  scale_colour_viridis_d(name = "Date",
+                         option = "plasma") +
   labs(x = "Sample",
        y = "Proportion") +
   scale_y_continuous(expand = c(0,0),

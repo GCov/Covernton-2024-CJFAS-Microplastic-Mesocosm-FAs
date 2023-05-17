@@ -9,14 +9,15 @@ theme1 <-
   theme_bw() +
   theme(
     panel.spacing = unit(1, "lines"),
-    text = element_text(size = 7,
+    text = element_text(size = 9,
                         family = "serif"),
-    axis.text = element_text(size = 7),
+    axis.text = element_text(size = 9),
     strip.background = element_blank(),
     strip.text = element_text(size = 8),
-    legend.text = element_text(size = 8),
+    legend.text = element_text(size = 10),
     panel.grid = element_blank(),
-    legend.key.size = unit(0.5, "cm")
+    legend.key.size = unit(0.4, "cm"),
+    legend.spacing = unit(0, "cm")
   )
 
 #### Load data ----
@@ -34,26 +35,19 @@ perch2021 <- left_join(biometrics, pop, by = "corral")
 #### Compare body size with MP concentration ----
 
 fish2021.mod1 <-
-  glmmTMB(body.weight ~ corral,
-          data = perch2021)
+  aov(body.weight ~ corral,
+      data = perch2021)
 
 summary(fish2021.mod1)
 
-plot(simulateResiduals(fish2021.mod1))
+plot(residuals(fish2021.mod1) ~ fitted(fish2021.mod1))
+abline(0,0)
 
-fish2021.mod2 <-
-  glmmTMB(body.weight ~ 1,
-          data = perch2021)
+# Corral is sig (p<0.001)
 
-anova(fish2021.mod1,
-      fish2021.mod2)  # Corral is sig (p<0.001)
+TukeyHSD(fish2021.mod1)
 
-plot(emmeans(fish2021.mod1,
-             specs = "corral"))
-
-## Corral H (one of the controls) had smaller fish than all other corrals,
-## except possibly E(100).
-## Corral B (the other control) had larger fish than E(100)
+## Differences in H-B, H-C, H-D, 
 
 fish2021.pred <- 
   data.frame(corral = levels(perch2021$corral))
@@ -66,30 +60,40 @@ fish2021.pred <- left_join(fish2021.pred,
                            pop,
                            by = "corral")
 
+fish2021.labs <- 
+  perch2021 %>% 
+  group_by(corral, MPconcentration) %>% 
+  summarize(y = max(na.omit(body.weight)))
+
+fish2021.labs$lab <-
+  c("a", "a", "a", "ab", "ab", "ab", "b", "ab")
+
 png("2021 Perch Weights.png",
-    width = 12,
-    height= 12, 
+    width = 8.84,
+    height= 6, 
     units = "cm",
-    res = 500)
+    res = 600)
 
 ggplot(perch2021) +
-  geom_density(aes(x = body.weight,
+  geom_boxplot(aes(x = MPconcentration,
+                   y = body.weight,
                    fill = corral),
-               alpha = 0.5) +
-  geom_vline(data = fish2021.pred,
-             aes(xintercept = fit,
-                 colour = corral),
-             linetype = "dashed") +
-  facet_grid(MPconcentration ~ .) +
-  labs(x = "Body Weight (g)",
-       y = "Density") +
+               alpha = 0.75) +
+  geom_text(data = fish2021.labs,
+            aes(x = MPconcentration,
+                y = y + 0.5,
+                label = lab,
+                group = corral),
+            size = 10/.pt,
+            position = position_dodge(width = 1)) +
+  labs(x = expression(paste("MP Exposure Concentration (particles"~L^-1*")")),
+       y = "Body Weight (g)") +
   scale_colour_viridis_d(option = "turbo",
                          name = "Corral") +
   scale_fill_viridis_d(option = "turbo",
                        name = "Corral") +
-  scale_x_continuous(limits = c(1, 16), 
-                     expand = c(0,0)) +
-  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(trans = "log1p",
+                     breaks = sort(unique(perch2021$MPconcentration))) +
   theme1
 
 dev.off()
