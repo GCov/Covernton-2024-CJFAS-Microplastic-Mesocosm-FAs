@@ -871,6 +871,18 @@ zoop_FA_prop_cca_site$point <-
 levels(zoop_FA_prop_cca_site$point) <- c("Start",
                                          "Mid-point",
                                          "End")
+# Generate hulls
+zoop_FA_date_hulls <- data.frame()
+
+for(i in 1:length(unique(zoop_FA_prop_cca_site$point))) {
+  subset <- 
+    zoop_FA_prop_cca_site[zoop_FA_prop_cca_site$point ==
+                            unique(zoop_FA_prop_cca_site$point)[i],
+    ]
+  hullrows <- chull(subset[,c(8:9)])
+  hull <- subset[hullrows,]
+  zoop_FA_date_hulls <- rbind(zoop_FA_date_hulls, hull)
+}
 
 #### Plot ----
 
@@ -890,11 +902,10 @@ ggplot() +
   geom_vline(aes(xintercept = 0),
              linetype = "dashed",
              linewidth = 0.25) +
-  geom_polygon(data = zoop_FA_prop_cca_site,
+  geom_polygon(data = zoop_FA_date_hulls,
                aes(x = CCA1,
                    y = CCA2,
-                   fill = label,
-                   colour = label),
+                   group = point),
                alpha = 0.25,
                linetype = "dashed",
                linewidth = 0.5) +

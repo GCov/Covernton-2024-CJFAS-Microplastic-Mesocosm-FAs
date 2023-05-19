@@ -183,7 +183,7 @@ png("Perch Diet Plot by Taxa Relative Abundance.png",
     units = "cm",
     res = 500)
 
-ggplot(perch_relabund_long) +
+ggplot(subset(perch_relabund_long, total.animals != 0)) +
   geom_col(aes(x = ID,
                y = count,
                fill = reorder(taxa, 1/(count+1), mean)),
@@ -505,6 +505,12 @@ dev.off()
 
 X2$corral <- relevel(X2$corral, "H")
 
+X2$stdate <- 
+  as.numeric(as.Date(X2$collection.date, 
+                     format = "%d-%m-%y")) - 
+  min(as.numeric(as.Date(X2$collection.date, 
+                         format = "%d-%m-%y")))
+
 diet_ca <- 
   cca(Y2 ~ corral + body.length,
       data = X2,
@@ -516,7 +522,7 @@ anova(diet_ca, by = "term")
 anova(diet_ca, by = "margin")
 anova(diet_ca, by = "onedf")
 
-plot(diet_ca, scaling = "symmetric")
+plot(diet_ca, scaling = "species")
 
 # Bar plot of relative eigenvalues
 barplot(as.vector(diet_ca$CA$eig)/sum(diet_ca$CA$eig))
@@ -647,10 +653,11 @@ perch_diet$stdate <-
                          format = "%d-%m-%y")))
 
 copepodmod1 <-
-  glmmTMB(log(cyclopoida + 1) ~ 
-            log(body.length) +
+  glmmTMB(cyclopoida ~ 
+            body.length +
             stdate +
-            (1 | corral), 
+            (1 | corral),
+          family = nbinom1(link = "log"),
           data = perch_diet)
 
 plot(simulateResiduals(copepodmod1))
@@ -659,4 +666,4 @@ plotResiduals(copepodmod1, perch_diet$stdate)
 
 summary(copepodmod1)
 
-## Bascially can't get a well-fitting model from the data
+## Basically can't get a well-fitting model from the data

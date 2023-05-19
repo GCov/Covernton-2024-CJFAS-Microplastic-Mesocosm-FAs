@@ -106,21 +106,14 @@ plot(total_FAs ~ YP.end, data = perch_FA2)
 
 # Perch Analysis----
 
-# Scale predictors
+## Add diet info ----
 
-perch_FA2$scaled.MPconcentration <-
-  as.numeric(scale(perch_FA2$MPconcentration, center = TRUE))
-
-perch_FA2$scaled.body.weight <-
-  as.numeric(scale(perch_FA2$body.weight, center = TRUE))
-
-# Add diet info
+diet_ca_cn$corral <- as.factor(diet_ca_cn$corral)
 
 perch_FA3 <-
   left_join(perch_FA2,
-            diet_summary,
-            by = "corral") %>%
-  rename(Copepods = "Cyclopoid Copepods")
+            diet_ca_cn[,c(1:3)],
+            by = "corral")
 
 # Calculate ratios
 
@@ -128,23 +121,31 @@ perch_FA3$ALA.LIN <- with(perch_FA3, C_18.3n.3 / C_18.2n.6)
 perch_FA3$PUFA.SMUFA <- with(perch_FA3, PUFAs / (total_SFAs + total_MUFAs))
 perch_FA3$ARA.LIN <- with(perch_FA3, C_20.4n.6 / C_18.2n.6)
 perch_FA3$DHA.ALA <- with(perch_FA3, C_22.6n.3 / C_18.3n.3)
+perch_FA3$DHA.ARA <- with(perch_FA3, C_22.6n.3 / C_20.4n.6)
 
-# Reduce dataset to fish with sex and gonad weight
+names(perch_FA3)
+
+# Reduce dataset to fish with sex and gonad weight and diet cca data
 
 perch_FA2sex <- 
   perch_FA3 %>% 
   filter(!is.na(sex) &
-           !is.na(gonad.weight))
+           !is.na(gonad.weight) &
+           !is.na(CCA1))
+
+nrow(perch_FA2sex)  # 18 fish remaining
 
 ## Total FAs ----
 
 plot(total_FAs ~ TL, data = perch_FA2)
 
-perchFAmod1 <- glmmTMB(total_FAs ~ 
-                         corral + 
+perchFAmod1 <- glmmTMB(log(total_FAs) ~ 
                          TL +
                          gonad.weight +
-                         sex,
+                         sex +
+                         CCA1 +
+                         CCA2 +
+                         (1 | corral),
                        data = perch_FA2sex)
 
 plot(simulateResiduals(perchFAmod1))
@@ -153,9 +154,6 @@ summary(perchFAmod1)
 # positive correlation with length, negative with gonad weight
 
 anova(perchFAmod1, update(perchFAmod1, ~-corral))  # corral not significant
-
-contrast(emmeans(perchFAmod1, specs = "corral"),
-         method = "pairwise")
 
 ## Relationship of all FAs with total FAs ----
 
@@ -206,13 +204,25 @@ ggplot(perch_FAlong) +
   facet_wrap(~FAs) +
   theme1
 
-# Ingested copepods
+`# CCA1
 ggplot(perch_FAlong) +
-  geom_smooth(aes(x = log(Copepods + 1),
+  geom_smooth(aes(x = CCA1,
                   y = value,
                   colour = FAs),
               method = "lm") +
-  geom_point(aes(x = log(Copepods + 1),
+  geom_point(aes(x = CCA1,
+                 y = value,
+                 colour = FAs)) +
+  facet_wrap(~FAs) +
+  theme1
+
+# CCA2
+ggplot(perch_FAlong) +
+  geom_smooth(aes(x = CCA2,
+                  y = value,
+                  colour = FAs),
+              method = "lm") +
+  geom_point(aes(x = CCA2,
                  y = value,
                  colour = FAs)) +
   facet_wrap(~FAs) +
@@ -239,7 +249,8 @@ perchOAmod1 <-
             gonad.weight + 
             TL +
             sex + 
-            log(Copepods + 1) +
+            CCA1 +
+            CCA2 +
             (1 | corral),
           data = perch_FA2sex)
 
@@ -293,7 +304,8 @@ perchALAmod1 <-
             gonad.weight + 
             TL +
             sex + 
-            log(Copepods + 1) +
+            CCA1 +
+            CCA2 +
             (1 | corral),
           data = perch_FA2sex)
 
@@ -345,8 +357,7 @@ perchSDAmod1 <-
   glmmTMB(C_18.4n.3 ~
             gonad.weight + 
             TL +
-            sex + 
-            log(Copepods + 1) +
+            sex +
             (1 | corral),
           data = perch_FA2sex)
 
@@ -395,26 +406,33 @@ dev.off()
 ### DHA ----
 
 perchDHAmod1 <- 
-  glmmTMB(C_22.6n.3 ~
-            gonad.weight + 
+  glmmTMB(log(C_22.6n.3) ~
             TL +
+            log(gonad.weight) +
             sex + 
-            log(Copepods + 1) +
+            CCA1 +
+            CCA2 +
             (1 | corral),
           data = perch_FA2sex)
 
 plot(simulateResiduals(perchDHAmod1))
 
-# residuals look bad with copepods in the model
+plotResiduals(perchDHAmod1, perch_FA2sex$gonad.weight)
+plotResiduals(perchDHAmod1, perch_FA2sex$TL)
+plotResiduals(perchDHAmod1, perch_FA2sex$sex)
+plotResiduals(perchDHAmod1, perch_FA2sex$CCA1)
+plotResiduals(perchDHAmod1, perch_FA2sex$CCA2)
+plotResiduals(perchDHAmod1, perch_FA2sex$total_FAs)
+
 
 summary(perchDHAmod1)  
-# positively correlated with total length and negatively with gonad weight
+# positively correlated with total length
 
 perchDHA_pred <- 
   ggemmeans(perchDHAmod1,
-            terms = c("gonad.weight",
+            terms = c("CCA1",
                       "TL")) %>%
-  rename(gonad.weight = x,
+  rename(CCA1 = x,
          TL = group)
 
 png("Perch DHA Plot.png",
@@ -425,23 +443,23 @@ png("Perch DHA Plot.png",
 
 ggplot(perch_FA2sex) +
   geom_ribbon(data = perchDHA_pred,
-              aes(x = gonad.weight,
+              aes(x = CCA1,
                   ymin = conf.low,
                   ymax = conf.high,
                   fill = TL),
               alpha = 0.3) +
   geom_line(data = perchDHA_pred,
-            aes(x = gonad.weight,
+            aes(x = CCA1,
                 y = predicted,
                 colour = TL)) +
-  geom_point(aes(x = gonad.weight,
+  geom_point(aes(x = CCA1,
                  y = C_22.6n.3),
              size = 1) +
   scale_colour_viridis_d(option = "plasma",
                          name = "Total Length (cm)") +
   scale_fill_viridis_d(option = "plasma",
                        "Total Length (cm)") +
-  labs(x = "Gonad Weight (g)",
+  labs(x = "CCA1",
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
   theme1
 
@@ -454,7 +472,8 @@ perchLINmod1 <-
             gonad.weight + 
             TL +
             sex + 
-            log(Copepods + 1) +
+            CCA1 + 
+            CCA2 +
             (1 | corral),
           data = perch_FA2sex)
 
@@ -507,7 +526,8 @@ perchARAmod1 <-
             gonad.weight + 
             TL +
             sex + 
-            log(Copepods + 1) +
+            CCA1 +
+            CCA2 +
             (1 | corral),
           data = perch_FA2sex)
 
@@ -607,22 +627,17 @@ dev.off()
 
 ## Ratios ----
 
-perch_FA3$ALA.LIN <- with(perch_FA3, C_18.3n.3 / C_18.2n.6)
-perch_FA3$PUFA.SMUFA <- with(perch_FA3, PUFAs / (total_SFAs + total_MUFAs))
-perch_FA3$ARA.LIN <- with(perch_FA3, C_20.4n.6 / C_18.2n.6)
-perch_FA3$DHA.ALA <- with(perch_FA3, C_22.6n.3 / C_18.3n.3)
-
-names(perch_FA3)
-
 ### ALA/LIN (diet) ----
 
-perchALA.LINmod1 <- glmmTMB(ALA.LIN ~ 
-                              gonad.weight + 
-                              sex +
-                              body.weight + 
-                              log(Copepods + 1) +
-                              (1 | corral),
-                          data = perch_FA2sex)
+plot(ALA.LIN ~ corral, data = perch_FA2sex)
+
+perchALA.LINmod1 <- 
+  glmmTMB(ALA.LIN ~
+            log(gonad.weight) +
+            sex +
+            TL + 
+            (1 | corral),
+          data = perch_FA2sex)
 
 plot(simulateResiduals(perchALA.LINmod1))
 
@@ -631,29 +646,242 @@ summary(perchALA.LINmod1)
 anova(perchALA.LINmod1,
       update(perchALA.LINmod1, ~-corral))  # corral significant
 
-emmeans(perchALA.LINmod1, specs = "corral")
-contrast(emmeans(perchALA.LINmod1, specs = "corral"),
-         method = "pairwise")
+perchALA.LINpred <-
+  ggemmeans(perchALA.LINmod1,
+            terms = c("gonad.weight",
+                      "TL",
+                      "CCA1")) %>% 
+  rename(gonad.weight = x,
+         TL = group,
+         CCA1 = facet)
+
+png("Perch ALA-LIN Plot.png",
+    width = 18,
+    height= 10, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA2sex) +
+  geom_ribbon(data = perchALA.LINpred,
+              aes(x = gonad.weight,
+                  ymin = conf.low,
+                  ymax = conf.high,
+                  fill = TL),
+              alpha = 0.3) +
+  geom_line(data = perchALA.LINpred,
+            aes(x = gonad.weight,
+                y = predicted,
+                colour = TL)) +
+  geom_point(aes(x = gonad.weight,
+                 y = ALA.LIN),
+             size = 1) +
+  scale_colour_viridis_d(option = "plasma",
+                         name = "Total Length (cm)") +
+  scale_fill_viridis_d(option = "plasma",
+                       "Total Length (cm)") +
+  labs(x = "Gonad Weight (g)",
+       y = "ALA:LIN") +
+  facet_wrap(~CCA1) +
+  theme1
+
+dev.off()
 
 ### PUFA/SFA+MUFA (feeding status) ----
 
-perchPUFA.SMUFAmod1 <- glmmTMB(value ~ 
-                              corral +
-                                gonad.weight * sex,
-                            data = subset(perch_FA_long, 
-                                          metric == "PUFA.SMUFA"))
+plot(PUFA.SMUFA ~ corral, data = perch_FA2sex)
+
+perchPUFA.SMUFAmod1 <- 
+  glmmTMB(PUFA.SMUFA ~
+            log(MPconcentration + 1) +
+            TL +
+            log(gonad.weight) +
+            sex +
+            (1 | corral),
+          data =  perch_FA2sex)
 
 plot(simulateResiduals(perchPUFA.SMUFAmod1))
+
+plotResiduals(perchPUFA.SMUFAmod1, perch_FA2sex$gonad.weight)
+plotResiduals(perchPUFA.SMUFAmod1, perch_FA2sex$sex)
+plotResiduals(perchPUFA.SMUFAmod1, perch_FA2sex$TL)
 
 summary(perchPUFA.SMUFAmod1)
 
 anova(perchPUFA.SMUFAmod1,
       update(perchPUFA.SMUFAmod1, ~-corral))  # corral not significant
 
-emmeans(perchPUFA.SMUFAmod1, specs = "corral")
-contrast(emmeans(perchPUFA.SMUFAmod1, specs = "corral"),
-         method = "pairwise")  # Nothing significant after Tukey correction
+perchPUFA.SMUFApred <-
+  ggemmeans(perchPUFA.SMUFAmod1,
+            terms = c("gonad.weight")) %>% 
+  rename(gonad.weight = x)
 
+png("Perch PUFA-MUFA + SFA Plot.png",
+    width = 8.84,
+    height= 5, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA2sex) +
+  geom_ribbon(data = perchPUFA.SMUFApred,
+              aes(x = gonad.weight,
+                  ymin = conf.low,
+                  ymax = conf.high),
+              alpha = 0.3) +
+  geom_line(data = perchPUFA.SMUFApred,
+            aes(x = gonad.weight,
+                y = predicted)) +
+  geom_point(aes(x = gonad.weight,
+                 y = PUFA.SMUFA),
+             size = 1) +
+  labs(x = "Gonad Weight (g)",
+       y = "PUFA/(SFA+MUFA)") +
+  theme1
+
+dev.off()
+
+### ARA/LIN (n-6 comparison) ----
+
+plot(ARA.LIN ~ corral, data = perch_FA2sex)
+
+perchARA.LINmod1 <- 
+  glmmTMB(ARA.LIN ~
+            gonad.weight +
+            sex +
+            TL + 
+            (1 | corral),
+          data = perch_FA2sex)
+
+plot(simulateResiduals(perchARA.LINmod1))
+
+summary(perchARA.LINmod1)
+
+anova(perchARA.LINmod1,
+      update(perchARA.LINmod1, ~-corral))  # corral not significant
+
+perchARA.LINpred <-
+  ggemmeans(perchARA.LINmod1,
+            terms = c("gonad.weight")) %>% 
+  rename(gonad.weight = x)
+
+png("Perch ARA-LIN Plot.png",
+    width = 8.84,
+    height= 5, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA2sex) +
+  geom_ribbon(data = perchARA.LINpred,
+              aes(x = gonad.weight,
+                  ymin = conf.low,
+                  ymax = conf.high),
+              alpha = 0.3) +
+  geom_line(data = perchARA.LINpred,
+            aes(x = gonad.weight,
+                y = predicted)) +
+  geom_point(aes(x = gonad.weight,
+                 y = ARA.LIN),
+             size = 1) +
+  labs(x = "Gonad Weight (g)",
+       y = "ARA:LIN") +
+  theme1
+
+dev.off()
+
+### DHA/ALA (n-3 comparison) ----
+
+plot(DHA.ALA ~ corral, data = perch_FA2sex)
+
+perchDHA.ALAmod1 <- 
+  glmmTMB(log(DHA.ALA) ~
+            gonad.weight +
+            sex +
+            TL +
+            (1 | corral),
+          data = perch_FA2sex)
+
+plot(simulateResiduals(perchDHA.ALAmod1))
+
+summary(perchDHA.ALAmod1)
+
+anova(perchDHA.ALAmod1,
+      update(perchDHA.ALAmod1, ~-corral))  # corral not significant
+
+perchDHA.ALApred <-
+  ggemmeans(perchDHA.ALAmod1,
+            terms = c("gonad.weight")) %>% 
+  rename(gonad.weight = x)
+
+png("Perch DHA-ALA Plot.png",
+    width = 8.84,
+    height= 5, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA2sex) +
+  geom_ribbon(data = perchDHA.ALApred,
+              aes(x = gonad.weight,
+                  ymin = conf.low,
+                  ymax = conf.high),
+              alpha = 0.3) +
+  geom_line(data = perchDHA.ALApred,
+            aes(x = gonad.weight,
+                y = predicted)) +
+  geom_point(aes(x = gonad.weight,
+                 y = DHA.ALA),
+             size = 1) +
+  labs(x = "Gonad Weight (g)",
+       y = "DHA:ALA") +
+  theme1
+
+dev.off()
+
+### DHA/ARA (diet comparison) ----
+
+plot(DHA.ARA ~ corral, data = perch_FA2sex)
+
+perchDHA.ARAmod1 <- 
+  glmmTMB(DHA.ARA ~
+            TL +
+            log(gonad.weight) + 
+            sex +
+            (1 | corral),
+          data = perch_FA2sex)
+
+plot(simulateResiduals(perchDHA.ARAmod1))
+
+summary(perchDHA.ARAmod1)
+
+anova(perchDHA.ARAmod1,
+      update(perchDHA.ARAmod1, ~-corral))  # corral not significant
+
+perchDHA.ARApred <-
+  ggemmeans(perchDHA.ARAmod1,
+            terms = c("gonad.weight")) %>% 
+  rename(gonad.weight = x)
+
+png("Perch DHA-ARA Plot.png",
+    width = 8.84,
+    height= 5, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA2sex) +
+  geom_ribbon(data = perchDHA.ARApred,
+              aes(x = gonad.weight,
+                  ymin = conf.low,
+                  ymax = conf.high),
+              alpha = 0.3) +
+  geom_line(data = perchDHA.ARApred,
+            aes(x = gonad.weight,
+                y = predicted)) +
+  geom_point(aes(x = gonad.weight,
+                 y = DHA.ARA),
+             size = 1) +
+  labs(x = "Gonad Weight (g)",
+       y = "DHA:ARA") +
+  theme1
+
+dev.off()
 
 # Zooplankton Analysis----
 

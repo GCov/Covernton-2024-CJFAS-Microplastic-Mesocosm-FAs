@@ -32,6 +32,12 @@ pop <- read.csv("fish_pop.csv",
 
 perch2021 <- left_join(biometrics, pop, by = "corral")
 
+# Remove those without data (mostly non-perch fish)
+
+perch2021 <- 
+  perch2021 %>%
+  filter(!is.na(TL))
+
 #### Compare body size with MP concentration ----
 
 fish2021.mod1 <-
@@ -47,7 +53,7 @@ abline(0,0)
 
 TukeyHSD(fish2021.mod1)
 
-## Differences in H-B, H-C, H-D, 
+## Differences in H-B, H-D, H-I
 
 fish2021.pred <- 
   data.frame(corral = levels(perch2021$corral))
@@ -66,7 +72,7 @@ fish2021.labs <-
   summarize(y = max(na.omit(body.weight)))
 
 fish2021.labs$lab <-
-  c("a", "a", "a", "ab", "ab", "ab", "b", "ab")
+  c("a", "ab", "a", "ab", "ab", "ab", "b", "a")
 
 png("2021 Perch Weights.png",
     width = 8.84,
@@ -77,20 +83,20 @@ png("2021 Perch Weights.png",
 ggplot(perch2021) +
   geom_boxplot(aes(x = MPconcentration,
                    y = body.weight,
-                   fill = corral),
+                   fill = reorder(corral, 
+                                  MPconcentration)),
                alpha = 0.75) +
   geom_text(data = fish2021.labs,
             aes(x = MPconcentration,
                 y = y + 0.5,
                 label = lab,
-                group = corral),
+                group = reorder(corral, 
+                                MPconcentration)),
             size = 10/.pt,
             position = position_dodge(width = 1)) +
   labs(x = expression(paste("MP Exposure Concentration (particles"~L^-1*")")),
        y = "Body Weight (g)") +
-  scale_colour_viridis_d(option = "turbo",
-                         name = "Corral") +
-  scale_fill_viridis_d(option = "turbo",
+  scale_fill_viridis_d(option = "plasma",
                        name = "Corral") +
   scale_x_continuous(trans = "log1p",
                      breaks = sort(unique(perch2021$MPconcentration))) +
@@ -150,3 +156,4 @@ summary(fish2021.mod2)
 
 plot(residuals(fish2021.mod1) ~ fitted(fish2021.mod1))
 abline(0,0)
+
