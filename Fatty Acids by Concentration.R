@@ -141,12 +141,9 @@ plot(total_FAs ~ TL, data = perch_FA2)
 
 perchFAmod1 <- glmmTMB(log(total_FAs) ~ 
                          TL +
-                         gonad.weight +
-                         sex +
-                         CCA1 +
-                         CCA2 +
+                         log(MPconcentration + 6) +
                          (1 | corral),
-                       data = perch_FA2sex)
+                       data = perch_FA3)
 
 plot(simulateResiduals(perchFAmod1))
 
@@ -403,63 +400,92 @@ ggplot(perch_FA2sex) +
 
 dev.off()
 
+### EPA ----
+
+perchEPAmod1 <- 
+  glmmTMB(C_20.5n.3 ~
+            log(MPconcentration + 6) + 
+            TL +
+            (1 | corral),
+          data = perch_FA3)
+
+plot(simulateResiduals(perchEPAmod1))
+
+
+summary(perchEPAmod1)  
+# positively correlated with total length
+
+perchEPA_pred <- 
+  ggemmeans(perchEPAmod1,
+            terms = c("TL")) %>%
+  rename(TL = x)
+
+png("Perch EPA Plot.png",
+    width = 8.84,
+    height= 4, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA3) +
+  geom_ribbon(data = perchEPA_pred,
+              aes(x = TL,
+                  ymin = conf.low,
+                  ymax = conf.high),
+              alpha = 0.3) +
+  geom_line(data = perchEPA_pred,
+            aes(x = TL,
+                y = predicted)) +
+  geom_point(aes(x = TL,
+                 y = C_20.5n.3),
+             size = 1) +
+  scale_colour_viridis_d(option = "plasma",
+                         name = "Total Length (cm)") +
+  labs(x = "Total Length (cm)",
+       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+  theme1
+
+dev.off()
+
 ### DHA ----
 
 perchDHAmod1 <- 
-  glmmTMB(log(C_22.6n.3) ~
+  glmmTMB(C_22.6n.3 ~
             TL +
-            log(gonad.weight) +
-            sex + 
-            CCA1 +
-            CCA2 +
+            log(MPconcentration + 6) +
             (1 | corral),
-          data = perch_FA2sex)
+          data = perch_FA3)
 
 plot(simulateResiduals(perchDHAmod1))
-
-plotResiduals(perchDHAmod1, perch_FA2sex$gonad.weight)
-plotResiduals(perchDHAmod1, perch_FA2sex$TL)
-plotResiduals(perchDHAmod1, perch_FA2sex$sex)
-plotResiduals(perchDHAmod1, perch_FA2sex$CCA1)
-plotResiduals(perchDHAmod1, perch_FA2sex$CCA2)
-plotResiduals(perchDHAmod1, perch_FA2sex$total_FAs)
-
 
 summary(perchDHAmod1)  
 # positively correlated with total length
 
 perchDHA_pred <- 
   ggemmeans(perchDHAmod1,
-            terms = c("CCA1",
-                      "TL")) %>%
-  rename(CCA1 = x,
-         TL = group)
+            terms = c("MPconcentration")) %>%
+  rename(MPconcentration = x)
 
 png("Perch DHA Plot.png",
     width = 8.84,
-    height= 5, 
+    height= 4, 
     units = "cm",
     res = 500)
 
 ggplot(perch_FA2sex) +
   geom_ribbon(data = perchDHA_pred,
-              aes(x = CCA1,
+              aes(x = MPconcentration,
                   ymin = conf.low,
-                  ymax = conf.high,
-                  fill = TL),
+                  ymax = conf.high),
               alpha = 0.3) +
   geom_line(data = perchDHA_pred,
-            aes(x = CCA1,
-                y = predicted,
-                colour = TL)) +
-  geom_point(aes(x = CCA1,
+            aes(x = MPconcentration,
+                y = predicted)) +
+  geom_point(aes(x = MPconcentration,
                  y = C_22.6n.3),
              size = 1) +
-  scale_colour_viridis_d(option = "plasma",
-                         name = "Total Length (cm)") +
-  scale_fill_viridis_d(option = "plasma",
-                       "Total Length (cm)") +
-  labs(x = "CCA1",
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0,1,10,100,1000,10000)) +
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
   theme1
 
@@ -523,13 +549,10 @@ dev.off()
 
 perchARAmod1 <- 
   glmmTMB(C_20.4n.6 ~
-            gonad.weight + 
-            TL +
-            sex + 
-            CCA1 +
-            CCA2 +
+            TL + 
+            log(MPconcentration + 6) +
             (1 | corral),
-          data = perch_FA2sex)
+          data = perch_FA3)
 
 plot(simulateResiduals(perchARAmod1))
 
@@ -899,9 +922,10 @@ zoop_FA$date2 <- as.factor(zoop_FA$date)
 ## Total FAs----
 
 zoopFAmod1 <- glmmTMB(total_FAs ~
-                        log(MPconcentration+1)*date2 +
+                        log(MPconcentration+1) + 
+                        as.factor(date) +
                         (1 | corral),
-                      data = zoop_FA)
+                      data = zoop_FA_exp)
 
 plotResiduals(simulateResiduals(zoopFAmod1))
 
@@ -965,6 +989,12 @@ dev.off()
 
 ## Individual FAs ----
 
+# Look at only mid and enpoints 
+
+zoop_FA_exp <-
+  zoop_FA %>% 
+  filter(date != "2021-05-27")
+
 ### LA ----
 
 zoopLAmod1 <- glmmTMB(C_18.2n.6 ~ 
@@ -994,10 +1024,11 @@ zoopLA_sim$lower <- zoopLA_pred$fit - 1.96*zoopLA_pred$se.fit
 
 ### ARA ----
 
-zoopARAmod1 <- glmmTMB(C_20.4n.6 ~ 
-                          log(MPconcentration + 1) * date2 +
+zoopARAmod1 <- glmmTMB(log(C_20.4n.6) ~ 
+                         log(MPconcentration + 6) +
+                         as.factor(date) +
                           (1 | corral),
-                        data = zoop_FA)
+                        data = zoop_FA_exp)
 
 plot(simulateResiduals(zoopARAmod1))
 
@@ -1050,10 +1081,10 @@ zoopALA_sim$lower <- zoopALA_pred$fit - 1.96*zoopALA_pred$se.fit
 ### EPA ----
 
 zoopEPAmod1 <- glmmTMB(C_20.5n.3 ~ 
-                          log(MPconcentration + 1) +
-                          date2 +
+                          log(MPconcentration + 6) +
+                          as.factor(date) +
                           (1 | corral),
-                        data = zoop_FA)
+                        data = zoop_FA_exp)
 
 plot(simulateResiduals(zoopEPAmod1))
 
@@ -1078,10 +1109,10 @@ zoopEPA_sim$lower <- zoopEPA_pred$fit - 1.96*zoopEPA_pred$se.fit
 ### DHA ----
 
 zoopDHAmod1 <- glmmTMB(C_22.6n.3 ~ 
-                          log(MPconcentration + 1) + 
-                          date2 +
+                          log(MPconcentration + 6) + 
+                          as.factor(date) +
                           (1 | corral),
-                        data = zoop_FA)
+                        data = zoop_FA_exp)
 
 plot(simulateResiduals(zoopDHAmod1))
 

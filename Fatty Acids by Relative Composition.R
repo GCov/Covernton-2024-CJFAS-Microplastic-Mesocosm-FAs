@@ -10,6 +10,7 @@ library(tidyr)
 library(DirichletReg)
 library(easyCODA)
 library(ggrepel)
+library(ggeffects)
 
 theme1 <-
   theme_bw() +
@@ -216,6 +217,77 @@ dev.off()
 # Analyses ----
 
 ## Perch analyses ----
+
+### Individual FAs ----
+
+#### DHA ----
+
+DHA.prop.mod1 <- 
+  glmmTMB(C_22.6n.3 ~ 
+            TL + 
+            log(MPconcentration + 1) +
+            (1 | corral), 
+          data = perch_FA_prop2)
+
+plot(simulateResiduals(DHA.prop.mod1))
+
+summary(DHA.prop.mod1)  # no effect of MP concentration
+
+#### EPA ----
+
+EPA.prop.mod1 <- 
+  glmmTMB(C_20.5n.3 ~ 
+            TL +
+            log(MPconcentration + 1) +
+            (1 | corral), 
+          data = perch_FA_prop2)
+
+  plot(simulateResiduals(EPA.prop.mod1))
+
+summary(EPA.prop.mod1)  # positive correlation with body size
+
+EPA.prop.pred <-
+  ggemmeans(EPA.prop.mod1, 
+            terms = "TL") %>% 
+  rename(TL = x)
+
+png("Perch Compositional EPA Plot.png",
+    width = 8.84,
+    height= 4, 
+    units = "cm",
+    res = 500)
+
+ggplot() +
+  geom_ribbon(data = EPA.prop.pred,
+              aes(x = TL,
+                  ymin = conf.low,
+                  ymax = conf.high),
+              alpha = 0.3) +
+  geom_line(data = EPA.prop.pred,
+            aes(x = TL,
+                y = predicted)) +
+  geom_point(data = perch_FA_prop2,
+             aes(x = TL,
+                 y = C_20.5n.3),
+             size = 1) +
+  labs(x = "Total Length (cm)",
+       y = "Proportion EPA") +
+  theme1
+
+dev.off()
+ 
+#### ARA ----
+
+ARA.prop.mod1 <- 
+  glmmTMB(C_20.4n.6 ~ 
+            TL + 
+            log(MPconcentration + 1) +
+            (1 | corral), 
+          data = perch_FA_prop2)
+
+plot(simulateResiduals(ARA.prop.mod1))
+
+summary(ARA.prop.mod1)  # no effect of MP concentration
 
 ### PCA ----
 
@@ -677,6 +749,82 @@ ggplot(reduced_perch_FA2_long) +
 
 
 ## Zooplankton analyses ----
+
+### Individual FAs ----
+
+# Separate just midpoint and endpoint zoops
+
+zoop.end <- 
+  zoop_FA_prop %>% 
+  filter(date == "2021-08-09" |
+           date == "2021-07-06")
+
+#### DHA ----
+
+DHA.prop.zoop.mod1 <- 
+  glmmTMB(C_22.6n.3 ~ 
+            log(MPconcentration + 6) +
+            as.factor(date), 
+          data = zoop.end)
+
+plot(simulateResiduals(DHA.prop.zoop.mod1))
+
+summary(DHA.prop.zoop.mod1)  
+# no effect of MP concentration
+# more DHA at the end
+
+#### EPA ----
+
+EPA.prop.zoop.mod1 <- 
+  glmmTMB(C_20.5n.3 ~ 
+            log(MPconcentration + 6) +
+            as.factor(date), 
+          data = zoop.end)
+
+plot(simulateResiduals(EPA.prop.zoop.mod1))
+
+summary(EPA.prop.zoop.mod1)  
+# no effect of MP concentration
+# less EPA at the end
+
+#### ARA ----
+
+ARA.prop.zoop.mod1 <- 
+  glmmTMB(C_20.4n.6 ~ 
+            MPconcentration +
+            as.factor(date), 
+          data = zoop.end)
+
+plot(simulateResiduals(ARA.prop.zoop.mod1))
+
+summary(ARA.prop.zoop.mod1)  
+# no effect of MP concentration
+# less ARA at the end
+
+zoop.end.long <-
+  zoop.end %>% 
+  select(-c(7:30,32:39,41,43:50)) %>% 
+  pivot_longer(cols = c(7:9),
+               names_to = "FA")
+png("Zoop Compositional HUFA Plot.png",
+    width = 8.84,
+    height= 6, 
+    units = "cm",
+    res = 500)
+
+ggplot(zoop.end.long) +
+  geom_boxplot(aes(x = as.factor(date),
+                  y = value,
+                  fill = FA)) +
+  scale_fill_viridis_d(name = "",
+                       labels = c("ARA",
+                                  "EPA",
+                                  "DHA")) +
+  labs(x = "Date",
+       y = "Proportion") +
+  theme1
+
+dev.off()
 
 ### PCA ----
 
