@@ -1072,18 +1072,15 @@ ggplot() +
                   size = 10 / .pt,
                   colour = "blue3",
                   box.padding = 0) +
-  scale_colour_viridis_d(name =
-                           expression(paste("Exposure Concentration (MPs" ~
-                                              L ^ -1 * ")")),
-                         option = "plasma") +
+  scale_shape_manual(values = c(21,24,22),
+                     name = "Experimental Time Point") +
   scale_fill_viridis_d(name =
                          expression(paste("Exposure Concentration (MPs" ~
                                             L ^ -1 * ")")),
                        option = "plasma") +
-  scale_shape_manual(values = c(21,24,22),
-                     name = "Experimental Time Point") +
   labs(x = "CCA1", 
        y = "CCA2") +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
   theme1 +
   theme(legend.key.size = unit(0.4, "cm"),
         legend.spacing = unit(0, "cm"))
