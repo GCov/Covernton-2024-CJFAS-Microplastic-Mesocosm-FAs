@@ -422,7 +422,7 @@ anova(perch_FA_prop_cca, by = "term")
 anova(perch_FA_prop_cca, by = "margin")
 anova(perch_FA_prop_cca, by = "onedf")
 
-plot(perch_FA_prop_cca, scaling = 3)
+plot(perch_FA_prop_cca, scaling = 1)
 
 summary(perch_FA_prop_cca)
 

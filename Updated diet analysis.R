@@ -444,17 +444,39 @@ dietnMDS <- metaMDS(Y2,
 goodness(dietnMDS)
 stressplot(dietnMDS)
 
-# Species scores
+# Site scores
 
 diet_nmds_site_scores <- as.data.frame(scores(dietnMDS,
                                               display = "site"))
 diet_nmds_site_scores <- cbind(diet_nmds_site_scores,
                                X2)
 
-# Site scores
+diet_nmds_site_scores$label <-
+  diet_nmds_site_scores$corral
+
+levels(diet_nmds_site_scores$label) <-
+  c(c("0(B)",
+      "414(C)",
+      "29,240(D)",
+      "100(E)",
+      "6(F)",
+      "7,071(G)",
+      "0(H)",
+      "1,710(I)"))
+
+# Species scores
 
 diet_nmds_species_scores <- as.data.frame(scores(dietnMDS,
                                                  display = "species"))
+
+diet_nmds_species_scores$Taxa <- c(
+  "Chironomid Pupae",
+  "Amphipods",
+  "Larval Chironomids",
+  "Cladocerans",
+  "Cyclopoid Copepods",
+  "Larval Odonates"
+)
 
 ### Generate hulls ----
 
@@ -470,6 +492,19 @@ for(i in 1:length(unique(diet_nmds_site_scores$corral))) {
   diet_nmds_hulls <- rbind(diet_nmds_hulls, hull)
 }
 
+diet_nmds_hulls$label <-
+  diet_nmds_hulls$corral
+
+levels(diet_nmds_hulls$label) <-
+  c(c("0(B)",
+      "414(C)",
+      "29,240(D)",
+      "100(E)",
+      "6(F)",
+      "7,071(G)",
+      "0(H)",
+      "1,710(I)"))
+
 ### Plot ----
 
 png("Perch nMDS.png",
@@ -479,25 +514,72 @@ png("Perch nMDS.png",
     res = 500)
 
 ggplot() +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
   geom_polygon(data = diet_nmds_hulls,
                aes(x = NMDS1,
                    y = NMDS2,
-                   fill = corral,
-                   colour = corral),
+                   fill = reorder(label,
+                                  MPconcentration,
+                                  mean),
+                   colour = reorder(label,
+                                    MPconcentration,
+                                    mean)),
                alpha = 0.3,
                size = 0.5) +
-  geom_point(data = diet_nmds_site_scores,
-             aes(x = NMDS1,
-                 y = NMDS2,
-                 fill = corral),
-             alpha = 0.3) +
+  geom_point(
+    data = diet_nmds_site_scores,
+    aes(
+      x = NMDS1,
+      y = NMDS2,
+      fill = reorder(label,
+                     MPconcentration,
+                     mean)
+    ),
+    size = 2,
+    alpha = 0.75,
+    shape = 21) +
+  geom_segment(data = diet_nmds_species_scores,
+               aes(x = 0,
+                   y = 0,
+                   xend = NMDS1,
+                   yend = NMDS2),
+               alpha = 0.5,
+               linewidth = 0.75,
+               arrow = arrow(angle = 20,
+                             length = unit(0.25, "cm"),
+                             type = "open"),
+               colour = "blue3") +
+  geom_text(data = diet_nmds_species_scores,
+            aes(x = 1.1*NMDS1,
+                y = 1.1*NMDS2,
+                label = Taxa),
+            size = 7 / .pt,
+            colour =  "blue3") +
   scale_fill_viridis_d(name = "Corral",
-                       option = "turbo") +
+                       option = "plasma") +
   scale_colour_viridis_d(name = "Corral",
-                         option = "turbo") +
+                         option = "plasma") +
+  scale_x_continuous(limits = c(-2.5, 4)) +
+  scale_y_continuous(limits = c(-2.5, 4)) +
   theme1
 
 dev.off()
+
+## PERMANOVA ----
+
+diet_PERMANOVA <- 
+  adonis2(Y2 ~ corral + body.length,
+          by = "onedf",
+          data = X2)
+
+diet_PERMANOVA
+
+
 
 ## CA ----
 
@@ -522,7 +604,7 @@ anova(diet_ca, by = "term")
 anova(diet_ca, by = "margin")
 anova(diet_ca, by = "onedf")
 
-plot(diet_ca, scaling = "species")
+plot(diet_ca, scaling = 1)
 
 # Bar plot of relative eigenvalues
 barplot(as.vector(diet_ca$CA$eig)/sum(diet_ca$CA$eig))
@@ -533,12 +615,12 @@ sum((as.vector(diet_ca$CA$eig)/sum(diet_ca$CA$eig))[1:2])
 # 'Site' scores
 diet_ca_site <- 
   as.data.frame(scores(diet_ca, display = "site",
-                       scaling = "symmetric"))
+                       scaling = 1))
 
 # 'Species' scores
 diet_ca_species <- 
   as.data.frame(scores(diet_ca, display = "species",
-                       scaling = "symmetric"))
+                       scaling = 1))
 
 diet_ca_species$Taxa <- c("Chironomid Pupae",
                           "Amphipods",
@@ -563,7 +645,7 @@ levels(diet_ca_site$label) <-
 
 diet_ca_cn <- 
   data.frame(scores(diet_ca, display = "cn",
-                    scaling = "symmetric")) 
+                    scaling = "sites")) 
 
 diet_ca_cn$corral <-
   c("H","C","D","E","F","G","I")
