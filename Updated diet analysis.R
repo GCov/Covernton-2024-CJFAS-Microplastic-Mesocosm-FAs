@@ -579,8 +579,6 @@ diet_PERMANOVA <-
 
 diet_PERMANOVA
 
-
-
 ## CA ----
 
 # Make H the reference level
