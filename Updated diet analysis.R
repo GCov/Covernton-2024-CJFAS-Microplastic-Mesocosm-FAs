@@ -422,27 +422,21 @@ for(i in 1:nrow(Y)){
 Y2 <- Y[sum>0,]
 X2 <- X[sum>0,]
 
-# Convert to relative abundance
-rel_abund <- decostand(Y2, method = "total")
-
 # Calculate distance matrix
-diss <- as.matrix(vegdist(rel_abund, method = "bray", na.rm = TRUE), 
-                  labels = TRUE)
 
 dietnMDS <- metaMDS(Y2,
-                    distance = "bray",
-                    k = 3,
-                    autotransform = FALSE,
-                    maxis = 999,
-                    trymax = 250,
-                    wascores =  TRUE,
-                    expand = TRUE)
+                    distance = "bray")
 
-# screeplot(dietnMDS)
+dietnMDS
+
+dietnMDS$stress
 
 # Shepards test/goodness of fit
-goodness(dietnMDS)
 stressplot(dietnMDS)
+
+gof <- goodness(dietnMDS)
+plot(dietnMDS, type = "t")
+points(dietnMDS, display = "sites", cex = gof * 300)
 
 # Site scores
 
@@ -555,8 +549,8 @@ ggplot() +
                              type = "open"),
                colour = "blue3") +
   geom_text(data = diet_nmds_species_scores,
-            aes(x = 1.1*NMDS1,
-                y = 1.1*NMDS2,
+            aes(x = 1.2*NMDS1,
+                y = 1.2*NMDS2,
                 label = Taxa),
             size = 7 / .pt,
             colour =  "blue3") +
@@ -564,8 +558,8 @@ ggplot() +
                        option = "plasma") +
   scale_colour_viridis_d(name = "Corral",
                          option = "plasma") +
-  scale_x_continuous(limits = c(-2.5, 4)) +
-  scale_y_continuous(limits = c(-2.5, 4)) +
+  scale_x_continuous(limits = c(-2, 2)) +
+  scale_y_continuous(limits = c(-2, 1)) +
   theme1
 
 dev.off()
@@ -574,6 +568,7 @@ dev.off()
 
 diet_PERMANOVA <- 
   adonis2(Y2 ~ corral + body.length,
+          method = "bray",
           by = "onedf",
           data = X2)
 

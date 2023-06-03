@@ -416,6 +416,8 @@ perch_FA_prop_cca <-
 
 summary(perch_FA_prop_cca)
 
+RsquareAdj(perch_FA_prop_cca)
+
 screeplot(perch_FA_prop_cca)
 
 anova(perch_FA_prop_cca, by = "term")
@@ -424,7 +426,7 @@ anova(perch_FA_prop_cca, by = "onedf")
 
 plot(perch_FA_prop_cca, 
      scaling = 1, 
-     display = c("lc","cn"))
+     display = c("lc", "cn"))
 
 plot(perch_FA_prop_cca, 
      scaling = 2, 
@@ -432,33 +434,34 @@ plot(perch_FA_prop_cca,
 
 summary(perch_FA_prop_cca)
 
-#### Pull out scores ----
+#### Pull out scores for scaling 1----
 
 # 'Site' scores
-perch_FA_prop_cca_site <- 
+perch_FA_prop_cca_site1 <- 
   as.data.frame(scores(perch_FA_prop_cca, display = "site",
-                       scaling = "symmetric"))
+                       scaling = 1))
 
 # 'Species' scores
-perch_FA_prop_cca_species <- 
+perch_FA_prop_cca_species1 <- 
   as.data.frame(scores(perch_FA_prop_cca, display = "species",
-                       scaling = "symmetric"))
+                       scaling = 1))
 
 trimmed.FA.names <- 
   c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "18:2(n-6)", 
     "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", "18:4(n-3)", "20:5(n-3)", 
     "22:5(n-3)", "22:6(n-3)")
 
-perch_FA_prop_cca_species$FA <- trimmed.FA.names
+perch_FA_prop_cca_species1$FA <- trimmed.FA.names
 
-perch_FA_prop_cca_site <- cbind(perch_FA_prop_covariates,
-                                perch_FA_prop_cca_site[, 1:2])
+perch_FA_prop_cca_site1 <- cbind(perch_FA_prop_covariates,
+                                 perch_FA_prop_cca_site1[, 1:2])
 
-perch_FA_prop_cca_centroids <- 
-  as.data.frame(scores(perch_FA_prop_cca, display = "cn",
-                       scaling = "symmetric"))
+perch_FA_prop_cca_centroids1 <- 
+  as.data.frame(scores(perch_FA_prop_cca, 
+                       display = "cn",
+                       scaling = 1))
 
-perch_FA_prop_cca_centroids$vars <- c("0(B)",
+perch_FA_prop_cca_centroids1$vars <- c("0(B)",
                                       "414(C)",
                                       "29,240(D)",
                                       "100(E)",
@@ -467,8 +470,8 @@ perch_FA_prop_cca_centroids$vars <- c("0(B)",
                                       "0(H)",
                                       "1,710(I)")
 
-perch_FA_prop_cca_centroids$vars <-
-  factor(perch_FA_prop_cca_centroids$vars,
+perch_FA_prop_cca_centroids1$vars <-
+  factor(perch_FA_prop_cca_centroids1$vars,
          levels = c("0(B)",
                     "0(H)",
                     "6(F)",
@@ -478,23 +481,90 @@ perch_FA_prop_cca_centroids$vars <-
                     "7,071(G)",
                     "29,240(D)"))
 
-perch_FA_prop_cca_centroids$corral <- as.factor(LETTERS[2:9])
-perch_FA_prop_cca_centroids <-
-  rename(perch_FA_prop_cca_centroids,
+perch_FA_prop_cca_centroids1$corral <- as.factor(LETTERS[2:9])
+perch_FA_prop_cca_centroids1 <-
+  rename(perch_FA_prop_cca_centroids1,
          cCCA1 = CCA1,
          cCCA2 = CCA2)
 
-perch_FA_prop_cca_site <-
-  left_join(perch_FA_prop_cca_site,
-            perch_FA_prop_cca_centroids,
+perch_FA_prop_cca_site1 <-
+  left_join(perch_FA_prop_cca_site1,
+            perch_FA_prop_cca_centroids1,
             by = "corral")
 
-#### Plot ----
+perch_FA_prop_cca_bp1 <- 
+  as.data.frame(scores(perch_FA_prop_cca, 
+                       display = "bp",
+                       scaling = 1))
 
-pal3 <-
-  colorRampPalette(c("lightyellow2", "tan2", "red4"))(7)
+perch_FA_prop_cca_bp1 <- perch_FA_prop_cca_bp1[8,]
 
-png("Perch FA Proportions CCA Spider.png",
+perch_FA_prop_cca_bp1$label <- "Body Weight"
+
+#### Pull out scores for scaling 2----
+
+# 'Site' scores
+perch_FA_prop_cca_site2 <- 
+  as.data.frame(scores(perch_FA_prop_cca, display = "site",
+                       scaling = 2))
+
+# 'Species' scores
+perch_FA_prop_cca_species2 <- 
+  as.data.frame(scores(perch_FA_prop_cca, display = "species",
+                       scaling = 2))
+
+perch_FA_prop_cca_species2$FA <- trimmed.FA.names
+
+perch_FA_prop_cca_site2 <- cbind(perch_FA_prop_covariates,
+                                 perch_FA_prop_cca_site2[, 1:2])
+
+perch_FA_prop_cca_centroids2 <- 
+  as.data.frame(scores(perch_FA_prop_cca, display = "cn",
+                       scaling = 2))
+
+perch_FA_prop_cca_centroids2$vars <- c("0(B)",
+                                       "414(C)",
+                                       "29,240(D)",
+                                       "100(E)",
+                                       "6(F)",
+                                       "7,071(G)",
+                                       "0(H)",
+                                       "1,710(I)")
+
+perch_FA_prop_cca_centroids2$vars <-
+  factor(perch_FA_prop_cca_centroids2$vars,
+         levels = c("0(B)",
+                    "0(H)",
+                    "6(F)",
+                    "100(E)",
+                    "414(C)",
+                    "1,710(I)",
+                    "7,071(G)",
+                    "29,240(D)"))
+
+perch_FA_prop_cca_centroids2$corral <- as.factor(LETTERS[2:9])
+perch_FA_prop_cca_centroids2 <-
+  rename(perch_FA_prop_cca_centroids2,
+         cCCA1 = CCA1,
+         cCCA2 = CCA2)
+
+perch_FA_prop_cca_site2 <-
+  left_join(perch_FA_prop_cca_site2,
+            perch_FA_prop_cca_centroids2,
+            by = "corral")
+
+perch_FA_prop_cca_bp2 <- 
+  as.data.frame(scores(perch_FA_prop_cca, 
+                       display = "bp",
+                       scaling = 2))
+
+perch_FA_prop_cca_bp2 <- perch_FA_prop_cca_bp2[8,]
+
+perch_FA_prop_cca_bp2$label <- "Body Weight"
+
+#### Plot scaling 1 ----
+
+png("Perch FA Proportions CCA Spider Scaling 1.png",
     width = 18,
     height= 10, 
     units = "cm",
@@ -507,7 +577,7 @@ ggplot() +
   geom_vline(aes(xintercept = 0),
              linetype = "dashed",
              linewidth = 0.25) +
-  geom_segment(data = perch_FA_prop_cca_site,
+  geom_segment(data = perch_FA_prop_cca_site1,
              aes(x = cCCA1,
                  y = cCCA2,
                  xend = CCA1,
@@ -518,7 +588,7 @@ ggplot() +
              arrow = arrow(angle = 20,
                            length = unit(0.25, "cm"),
                            type = "open")) +
-  geom_point(data = perch_FA_prop_cca_site,
+  geom_point(data = perch_FA_prop_cca_site1,
                aes(x = cCCA1,
                    y = cCCA2,
                    fill = vars),
@@ -526,13 +596,88 @@ ggplot() +
              shape = 21,
              alpha = 0.95,
              colour = "grey30") +
-  geom_text_repel(data = perch_FA_prop_cca_species,
-                  aes(x = CCA1,
-                      y = CCA2,
-                      label = FA),
-                  size = 10 / .pt,
-                  colour = "blue3",
-                  box.padding = 0) +
+  geom_text(data = perch_FA_prop_cca_bp1,
+             aes(x = CCA1*4,
+                 y = CCA2*20,
+                 label = label),
+             size = 10 / .pt,
+             colour =  "blue3") +
+  geom_segment(data = perch_FA_prop_cca_bp1,
+               aes(x = 0,
+                   y = 0,
+                   xend = CCA1*4,
+                   yend = CCA2*4,
+                   colour = vars),
+               alpha = 0.75,
+               linewidth = 0.5,
+               arrow = arrow(angle = 20,
+                             length = unit(0.25, "cm"),
+                             type = "open"),
+               colour = "blue3") +
+  scale_colour_viridis_d(name =
+                           expression(paste("Exposure Concentration (MPs" ~
+                                              L ^ -1 * ")")),
+                         option = "plasma") +
+  scale_fill_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "plasma") +
+  labs(x = "CCA1", 
+       y = "CCA2") +
+  theme1 +
+  theme(legend.key.size = unit(0.2, "cm"),
+        legend.spacing = unit(0, "cm"))
+
+dev.off()
+
+
+#### Plot scaling 2 ----
+
+png("Perch FA Proportions CCA Spider Scaling 2.png",
+    width = 18,
+    height= 10, 
+    units = "cm",
+    res = 600)
+
+ggplot() +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_point(data = perch_FA_prop_cca_site2,
+             aes(x = cCCA1,
+                 y = cCCA2,
+                 fill = vars),
+             size = 2,
+             shape = 21,
+             alpha = 0.95,
+             colour = "grey30") +
+  geom_text(data = perch_FA_prop_cca_species2,
+            aes(x = CCA1,
+                y = CCA2,
+                label = FA),
+            size = 10 / .pt,
+            colour = "blue3") +
+  geom_text(data = perch_FA_prop_cca_bp2,
+            aes(x = CCA1,
+                y = CCA2*10,
+                label = label),
+            size = 10 / .pt,
+            colour =  "blue3") +
+  geom_segment(data = perch_FA_prop_cca_bp2,
+               aes(x = 0,
+                   y = 0,
+                   xend = CCA1,
+                   yend = CCA2,
+                   colour = vars),
+               alpha = 0.75,
+               linewidth = 0.5,
+               arrow = arrow(angle = 20,
+                             length = unit(0.25, "cm"),
+                             type = "open"),
+               colour = "blue3") +
   scale_colour_viridis_d(name =
                            expression(paste("Exposure Concentration (MPs" ~
                                               L ^ -1 * ")")),
@@ -960,27 +1105,31 @@ zoop_FA_prop_cca <-
       scale. = FALSE,
       data = zoop_FA_prop_covariates)
 
-plot(zoop_FA_prop_cca, scaling = 3)
+plot(zoop_FA_prop_cca, scaling = 1, display = c("lc", "cn"))
+
+plot(zoop_FA_prop_cca, scaling = 2, display = c("sp", "cn"))
 
 screeplot(zoop_FA_prop_cca)
 
 summary(zoop_FA_prop_cca)
 
+set.seed(4399)
+
 anova(zoop_FA_prop_cca, by = "term")
 anova(zoop_FA_prop_cca, by = "margin")
 anova(zoop_FA_prop_cca, by = "onedf")
 
-#### Pull out scores ----
+#### Pull out scaling 1 scores ----
 
 # 'Site' scores
-zoop_FA_prop_cca_site <- 
+zoop_FA_prop_cca_site1 <- 
   as.data.frame(scores(zoop_FA_prop_cca, display = "site",
-                       scaling = "symmetric"))
+                       scaling = 1))
 
 # 'Species' scores
-zoop_FA_prop_cca_species <- 
+zoop_FA_prop_cca_species1 <- 
   as.data.frame(scores(zoop_FA_prop_cca, display = "species",
-                       scaling = "symmetric"))
+                       scaling = 1))
 
 trimmed.FA.names.zoops <- 
   c("14:0", "16:0", "18:0", 
@@ -989,14 +1138,14 @@ trimmed.FA.names.zoops <-
     "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
     "18:4(n-3)", "20:5(n-3)", "22:6(n-3)")
 
-zoop_FA_prop_cca_species$FA <- trimmed.FA.names.zoops
+zoop_FA_prop_cca_species1$FA <- trimmed.FA.names.zoops
 
-zoop_FA_prop_cca_site <- cbind(zoop_FA_prop_covariates,
-                                zoop_FA_prop_cca_site[, 1:2])
+zoop_FA_prop_cca_site1 <- cbind(zoop_FA_prop_covariates,
+                                zoop_FA_prop_cca_site1[, 1:2])
 
-zoop_FA_prop_cca_site$label <- zoop_FA_prop_cca_site$corral
+zoop_FA_prop_cca_site1$label <- zoop_FA_prop_cca_site1$corral
 
-levels(zoop_FA_prop_cca_site$label) <- c("24(A)",
+levels(zoop_FA_prop_cca_site1$label) <- c("24(A)",
                                          "0(B)",
                                          "414(C)",
                                          "29,240(D)",
@@ -1006,8 +1155,8 @@ levels(zoop_FA_prop_cca_site$label) <- c("24(A)",
                                          "0(H)",
                                          "1,710(I)")
 
-zoop_FA_prop_cca_site$label <-
-  factor(zoop_FA_prop_cca_site$label,
+zoop_FA_prop_cca_site1$label <-
+  factor(zoop_FA_prop_cca_site1$label,
          levels = c("0(B)",
                     "0(H)",
                     "6(F)",
@@ -1019,31 +1168,47 @@ zoop_FA_prop_cca_site$label <-
                     "29,240(D)"))
 
 
-zoop_FA_prop_cca_site$point <- 
-  as.factor(as.character(zoop_FA_prop_cca_site$date))
+zoop_FA_prop_cca_site1$point <- 
+  as.factor(as.character(zoop_FA_prop_cca_site1$date))
 
-levels(zoop_FA_prop_cca_site$point) <- c("Start",
+levels(zoop_FA_prop_cca_site1$point) <- c("Start",
                                          "Mid-point",
                                          "End")
 # Generate hulls
 zoop_FA_date_hulls <- data.frame()
 
-for(i in 1:length(unique(zoop_FA_prop_cca_site$point))) {
+for(i in 1:length(unique(zoop_FA_prop_cca_site1$point))) {
   subset <- 
-    zoop_FA_prop_cca_site[zoop_FA_prop_cca_site$point ==
-                            unique(zoop_FA_prop_cca_site$point)[i],
+    zoop_FA_prop_cca_site1[zoop_FA_prop_cca_site1$point ==
+                            unique(zoop_FA_prop_cca_site1$point)[i],
     ]
   hullrows <- chull(subset[,c(8:9)])
   hull <- subset[hullrows,]
   zoop_FA_date_hulls <- rbind(zoop_FA_date_hulls, hull)
 }
 
-#### Plot ----
+zoop_FA_prop_cca_cn1 <-
+  data.frame(scores(zoop_FA_prop_cca,
+                    display = "cn",
+                    scaling = 1))
 
-pal4 <-
-  colorRampPalette(c("lightyellow2", "tan2", "red4"))(9)
+zoop_FA_prop_cca_cn1$label <-
+  factor(c("24(A)",
+              "0(B)",
+              "414(C)",
+              "29, 240(D)",
+              "100(E)",
+              "6(F)",
+              "7, 071(G)",
+              "0(H)",
+              "1, 710(I)",
+              "Start",
+              "Mid-point",
+    "End"))
 
-png("Zooplankton FA Proportions CCA.png",
+##### Plot ----
+
+png("Zooplankton FA Scaling 1 Proportions CCA.png",
     width = 19,
     height= 8, 
     units = "cm",
@@ -1063,7 +1228,7 @@ ggplot() +
                alpha = 0.25,
                linetype = "dashed",
                linewidth = 0.5) +
-  geom_point(data = zoop_FA_prop_cca_site,
+  geom_point(data = zoop_FA_prop_cca_site1,
              aes(x = CCA1,
                  y = CCA2,
                  fill = label,
@@ -1071,13 +1236,13 @@ ggplot() +
              size = 2,
              alpha = 0.75,
              colour = "grey30") +
-  geom_text_repel(data = zoop_FA_prop_cca_species,
+  geom_text_repel(data = zoop_FA_prop_cca_cn1,
                   aes(x = CCA1,
                       y = CCA2,
-                      label = FA),
+                      label = label),
                   size = 10 / .pt,
-                  colour = "blue3",
-                  box.padding = 0) +
+                  colour =  "blue3",
+                  box.padding = unit(0, "cm")) +
   scale_shape_manual(values = c(21,24,22),
                      name = "Experimental Time Point") +
   scale_fill_viridis_d(name =
@@ -1092,6 +1257,141 @@ ggplot() +
         legend.spacing = unit(0, "cm"))
 
 dev.off()
+
+#### Pull out scaling 2 scores ----
+
+# 'Site' scores
+zoop_FA_prop_cca_site2 <- 
+  as.data.frame(scores(zoop_FA_prop_cca, display = "site",
+                       scaling = 2))
+
+# 'Species' scores
+zoop_FA_prop_cca_species2 <- 
+  as.data.frame(scores(zoop_FA_prop_cca, display = "species",
+                       scaling = 2))
+
+zoop_FA_prop_cca_species2$FA <- trimmed.FA.names.zoops
+
+zoop_FA_prop_cca_site2 <- cbind(zoop_FA_prop_covariates,
+                                zoop_FA_prop_cca_site1[, 1:2])
+
+zoop_FA_prop_cca_site2$label <- zoop_FA_prop_cca_site2$corral
+
+levels(zoop_FA_prop_cca_site1$label) <- c("24(A)",
+                                          "0(B)",
+                                          "414(C)",
+                                          "29,240(D)",
+                                          "100(E)",
+                                          "6(F)",
+                                          "7,071(G)",
+                                          "0(H)",
+                                          "1,710(I)")
+
+zoop_FA_prop_cca_site2$label <-
+  factor(zoop_FA_prop_cca_site2$label,
+         levels = c("0(B)",
+                    "0(H)",
+                    "6(F)",
+                    "24(A)",
+                    "100(E)",
+                    "414(C)",
+                    "1,710(I)",
+                    "7,071(G)",
+                    "29,240(D)"))
+
+
+zoop_FA_prop_cca_site2$point <- 
+  as.factor(as.character(zoop_FA_prop_cca_site2$date))
+
+levels(zoop_FA_prop_cca_site2$point) <- c("Start",
+                                          "Mid-point",
+                                          "End")
+
+zoop_FA_prop_cca_cn1 <-
+  data.frame(scores(zoop_FA_prop_cca,
+                    display = "cn",
+                    scaling = 1))
+
+zoop_FA_prop_cca_cn1$label <-
+  factor(c("24(A)",
+              "0(B)",
+              "414(C)",
+              "29, 240(D)",
+              "100(E)",
+              "6(F)",
+              "7, 071(G)",
+              "0(H)",
+              "1, 710(I)",
+              "Start",
+              "Mid-point",
+    "End"))
+
+zoop_FA_prop_cca_cn2 <-
+  data.frame(scores(zoop_FA_prop_cca,
+                    display = "cn",
+                    scaling = 2))
+
+zoop_FA_prop_cca_cn2$label <-
+  factor(c("24(A)",
+           "0(B)",
+           "414(C)",
+           "29, 240(D)",
+           "100(E)",
+           "6(F)",
+           "7, 071(G)",
+           "0(H)",
+           "1, 710(I)",
+           "Start",
+           "Mid-point",
+           "End"))
+
+
+
+##### Plot ----
+
+png("Zooplankton FA Scaling 2 Proportions CCA.png",
+    width = 12,
+    height= 8, 
+    units = "cm",
+    res = 600)
+
+ggplot() +
+  geom_hline(aes(yintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed",
+             linewidth = 0.25) +
+  geom_text_repel(data = zoop_FA_prop_cca_species2,
+                  aes(x = CCA1,
+                      y = CCA2,
+                      label = FA),
+                  size = 8 / .pt,
+                  colour = "blue3",
+                  box.padding = 0) +
+  geom_text_repel(data = zoop_FA_prop_cca_cn2,
+                  aes(x = CCA1,
+                      y = CCA2,
+                      label = label),
+                  size = 10 / .pt,
+                  colour =  "purple3",
+                  box.padding = unit(0, "cm")) +
+  scale_shape_manual(values = c(21,24,22),
+                     name = "Experimental Time Point") +
+  scale_fill_viridis_d(name =
+                         expression(paste("Exposure Concentration (MPs" ~
+                                            L ^ -1 * ")")),
+                       option = "plasma") +
+  scale_y_continuous(limits = c(-1.25, 1)) +
+  labs(x = "CCA1", 
+       y = "CCA2") +
+  guides(fill=guide_legend(override.aes=list(shape=21))) +
+  theme1 +
+  theme(legend.key.size = unit(0.4, "cm"),
+        legend.spacing = unit(0, "cm"))
+
+dev.off()
+
 
 
 ### nMDS ----
