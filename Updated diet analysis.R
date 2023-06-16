@@ -8,6 +8,7 @@ library(DHARMa)
 library(vegan)
 library(MuMIn)
 library(Hmsc)
+library(ape)
 
 theme1 <-
   theme_bw() +
@@ -110,7 +111,7 @@ perch_diet_long$treatment <-
   as.factor(perch_diet_long$corral)
 
 levels(perch_diet_long$treatment) <-
-  c("0(B)", "414", "29,240", "100", "6", "7,071", "0(H)", "1,710")
+  c("0(1)", "414", "29,240", "100", "6", "7,071", "0(2)", "1,710")
 
 ## Plot by taxa ----
 
@@ -175,7 +176,7 @@ perch_relabund_long$treatment <-
   as.factor(perch_relabund_long$corral)
 
 levels(perch_relabund_long$treatment) <-
-  c("0(B)", "414", "29,240", "100", "6", "7,071", "0(H)", "1,710")
+  c("0(1)", "414", "29,240", "100", "6", "7,071", "0(2)", "1,710")
 
 png("Perch Diet Plot by Taxa Relative Abundance.png",
     width = 12,
@@ -424,6 +425,8 @@ X2 <- X[sum>0,]
 
 # Calculate distance matrix
 
+set.seed(2454)
+
 dietnMDS <- metaMDS(Y2,
                     distance = "bray")
 
@@ -449,14 +452,14 @@ diet_nmds_site_scores$label <-
   diet_nmds_site_scores$corral
 
 levels(diet_nmds_site_scores$label) <-
-  c(c("0(B)",
-      "414(C)",
-      "29,240(D)",
-      "100(E)",
-      "6(F)",
-      "7,071(G)",
-      "0(H)",
-      "1,710(I)"))
+  c(c("0(1)",
+      "414",
+      "29,240",
+      "100",
+      "6",
+      "7,071",
+      "0(2)",
+      "1,710"))
 
 # Species scores
 
@@ -490,19 +493,19 @@ diet_nmds_hulls$label <-
   diet_nmds_hulls$corral
 
 levels(diet_nmds_hulls$label) <-
-  c(c("0(B)",
-      "414(C)",
-      "29,240(D)",
-      "100(E)",
-      "6(F)",
-      "7,071(G)",
-      "0(H)",
-      "1,710(I)"))
+  c(c("0(1)",
+      "414",
+      "29,240",
+      "100",
+      "6",
+      "7,071",
+      "0(2)",
+      "1,710"))
 
 ### Plot ----
 
 png("Perch nMDS.png",
-    width = 12,
+    width = 8,
     height= 8, 
     units = "cm",
     res = 500)
@@ -560,11 +563,32 @@ ggplot() +
                          option = "plasma") +
   scale_x_continuous(limits = c(-2, 2)) +
   scale_y_continuous(limits = c(-2, 1)) +
-  theme1
+  theme1 +
+  theme(legend.position = "bottom")
 
 dev.off()
 
+## PCoA ----
+
+dietdist <- vegdist(Y2, method = "hellinger")
+
+dietpcoa <- pcoa(dietdist)
+
+barplot(dietpcoa$values$Relative_eig[1:10])
+
+biplot.pcoa(dietpcoa, Y2)
+
 ## PERMANOVA ----
+
+set.seed(425)
+
+diet_PERMANOVA <- 
+  adonis2(Y2 ~ corral + body.length,
+          method = "bray",
+          by = "margin",
+          data = X2)
+
+diet_PERMANOVA
 
 diet_PERMANOVA <- 
   adonis2(Y2 ~ corral + body.length,
@@ -575,7 +599,7 @@ diet_PERMANOVA <-
 diet_PERMANOVA
 
 ## CA ----
-
+ 
 # Make H the reference level
 
 X2$corral <- relevel(X2$corral, "H")
@@ -627,14 +651,14 @@ diet_ca_site <- cbind(X2, diet_ca_site[, 1:2])
 diet_ca_site$label <- diet_ca_site$corral
 
 levels(diet_ca_site$label) <-
-  c(c("0(H)",
-      "0(B)",
-      "414(C)",
-      "29,240(D)",
-      "100(E)",
-      "6(F)",
-      "7,071(G)",
-      "1,710(I)"))
+  c(c("0(2)",
+      "0(1)",
+      "414",
+      "29,240",
+      "100",
+      "6",
+      "7,071",
+      "1,710"))
 
 diet_ca_cn <- 
   data.frame(scores(diet_ca, display = "cn",
@@ -742,3 +766,4 @@ plotResiduals(copepodmod1, perch_diet$stdate)
 summary(copepodmod1)
 
 ## Basically can't get a well-fitting model from the data
+

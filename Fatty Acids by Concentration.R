@@ -922,7 +922,7 @@ zoop_FA$date2 <- as.factor(zoop_FA$date)
 ## Total FAs----
 
 zoopFAmod1 <- glmmTMB(total_FAs ~
-                        log(MPconcentration+1) + 
+                        log(MPconcentration + 6) + 
                         as.factor(date) +
                         (1 | corral),
                       data = zoop_FA_exp)
@@ -931,26 +931,9 @@ plotResiduals(simulateResiduals(zoopFAmod1))
 
 summary(zoopFAmod1)
 
-zoopFAmod2 <- glmmTMB(total_FAs ~
-                        MPconcentration + date2 +
-                        (1 | corral),
-                      data = zoop_FA)
-
-anova(zoopFAmod1, zoopFAmod2)  # not significant
-
-summary(zoopFAmod2)
-
-AICc(zoopFAmod1, zoopFAmod2)
-
-zoop_tot_FA_predict <- predict(zoopFAmod1,
-                               re.form = NA,
-                               se.fit = TRUE)
-
-zoop_tot_FA_predict$upper <- with(zoop_tot_FA_predict,
-                                   fit + 1.98 * se.fit)
-
-zoop_tot_FA_predict$lower <- with(zoop_tot_FA_predict,
-                                   fit - 1.98 * se.fit)
+zoop_tot_FA_predict <- 
+  ggemmeans(zoopFAmod1,
+            terms = "date")
 
 ### Plot ----
 
@@ -1088,23 +1071,12 @@ zoopEPAmod1 <- glmmTMB(C_20.5n.3 ~
 
 plot(simulateResiduals(zoopEPAmod1))
 
-summary(zoopEPAmod1)  # no effect
+summary(zoopEPAmod1)
 
-zoopEPA_sim <- expand.grid(MPconcentration = seq(from = 0,
-                                                 to = 29240,
-                                                 length.out = 1000),
-                           date2 = c("2021-05-27",
-                                     "2021-07-06",
-                                     "2021-08-09"),
-                           corral = NA)
-
-zoopEPA_pred <- predict(zoopEPAmod1,
-                         newdata = zoopEPA_sim,
-                         se.fit = TRUE)
-
-zoopEPA_sim$pred <- zoopEPA_pred$fit
-zoopEPA_sim$upper <- zoopEPA_pred$fit + 1.96*zoopEPA_pred$se.fit
-zoopEPA_sim$lower <- zoopEPA_pred$fit - 1.96*zoopEPA_pred$se.fit
+zoopEPA_pred <- 
+  ggemmeans(zoopEPAmod1,
+            terms = c("date"),
+            terms_to_colnames	= TRUE)
 
 ### DHA ----
 
@@ -1118,21 +1090,8 @@ plot(simulateResiduals(zoopDHAmod1))
 
 summary(zoopDHAmod1)  # no effect
 
-zoopDHA_sim <- expand.grid(MPconcentration = seq(from = 0,
-                                                 to = 29240,
-                                                 length.out = 1000),
-                           date2 = c("2021-05-27",
-                                     "2021-07-06",
-                                     "2021-08-09"),
-                           corral = NA)
-
-zoopDHA_pred <- predict(zoopDHAmod1,
-                         newdata = zoopDHA_sim,
-                         se.fit = TRUE)
-
-zoopDHA_sim$pred <- zoopDHA_pred$fit
-zoopDHA_sim$upper <- zoopDHA_pred$fit + 1.96*zoopDHA_pred$se.fit
-zoopDHA_sim$lower <- zoopDHA_pred$fit - 1.96*zoopDHA_pred$se.fit
+zoopDHA_pred <- ggemmeans(zoopDHAmod1,
+                          terms = "date")
 
 ### HUFA ----
 

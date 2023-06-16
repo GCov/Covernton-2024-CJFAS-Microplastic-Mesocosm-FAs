@@ -66,9 +66,20 @@ fish2021.pred <- left_join(fish2021.pred,
                            pop,
                            by = "corral")
 
+perch2021$treatment <-
+  perch2021$MPconcentration
+
+perch2021$treatment[perch2021$treatment == "0"] <- 
+  with(perch2021[perch2021$treatment == "0",],
+       ifelse(corral == "B",
+              "0 (1)",
+              "0 (2)")) 
+
+perch2021$treatment <- as.factor(perch2021$treatment)
+
 fish2021.labs <- 
   perch2021 %>% 
-  group_by(corral, MPconcentration) %>% 
+  group_by(corral, MPconcentration, treatment) %>% 
   summarize(y = max(na.omit(body.weight)))
 
 fish2021.labs$lab <-
@@ -83,21 +94,23 @@ png("2021 Perch Weights.png",
 ggplot(perch2021) +
   geom_boxplot(aes(x = MPconcentration,
                    y = body.weight,
-                   fill = reorder(corral, 
-                                  MPconcentration)),
+                   fill = reorder(treatment,
+                                  MPconcentration,
+                                  mean)),
                alpha = 0.75) +
   geom_text(data = fish2021.labs,
             aes(x = MPconcentration,
                 y = y + 0.5,
                 label = lab,
-                group = reorder(corral, 
-                                MPconcentration)),
+                group = reorder(treatment,
+                                MPconcentration,
+                                mean)),
             size = 10/.pt,
             position = position_dodge(width = 1)) +
   labs(x = expression(paste("MP Exposure Concentration (particles"~L^-1*")")),
        y = "Body Weight (g)") +
   scale_fill_viridis_d(option = "plasma",
-                       name = "Corral") +
+                       name = "Treatment") +
   scale_x_continuous(trans = "log1p",
                      breaks = sort(unique(perch2021$MPconcentration))) +
   theme1
