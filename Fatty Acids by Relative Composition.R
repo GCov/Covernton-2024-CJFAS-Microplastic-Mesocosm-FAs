@@ -427,25 +427,21 @@ anova(perch_FA_prop_cca, by = "term")
 anova(perch_FA_prop_cca, by = "margin")
 anova(perch_FA_prop_cca, by = "onedf")
 
-
-#### Pull out scores for scaling 1----
-
-# 'Site' scores
-perch_FA_prop_cca_site1 <- 
-  as.data.frame(scores(perch_FA_prop_cca, display = "site",
-                       scaling = 1))
-
-# 'Species' scores
-perch_FA_prop_cca_species1 <- 
-  as.data.frame(scores(perch_FA_prop_cca, display = "species",
-                       scaling = 1))
+plot(perch_FA_prop_cca, scaling = 1, display = c("lc", "wa", "cn"))
+plot(perch_FA_prop_cca, scaling = 2, display = c("sp", "cn"))
 
 trimmed.FA.names <- 
   c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "18:2(n-6)", 
     "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", "18:4(n-3)", "20:5(n-3)", 
     "22:5(n-3)", "22:6(n-3)")
 
-perch_FA_prop_cca_species1$FA <- trimmed.FA.names
+
+#### Pull out scores for scaling 1----
+
+# 'Site' scores
+perch_FA_prop_cca_site1 <- 
+  as.data.frame(scores(perch_FA_prop_cca, display = "lc",
+                       scaling = 1))
 
 perch_FA_prop_cca_site1 <- cbind(perch_FA_prop_covariates,
                                  perch_FA_prop_cca_site1[, 1:2])
@@ -497,20 +493,12 @@ perch_FA_prop_cca_bp1$label <- "Body Weight"
 
 #### Pull out scores for scaling 2----
 
-# 'Site' scores
-perch_FA_prop_cca_site2 <- 
-  as.data.frame(scores(perch_FA_prop_cca, display = "site",
-                       scaling = 2))
-
 # 'Species' scores
 perch_FA_prop_cca_species2 <- 
   as.data.frame(scores(perch_FA_prop_cca, display = "species",
                        scaling = 2))
 
 perch_FA_prop_cca_species2$FA <- trimmed.FA.names
-
-perch_FA_prop_cca_site2 <- cbind(perch_FA_prop_covariates,
-                                 perch_FA_prop_cca_site2[, 1:2])
 
 perch_FA_prop_cca_centroids2 <- 
   as.data.frame(scores(perch_FA_prop_cca, display = "cn",
@@ -540,11 +528,6 @@ perch_FA_prop_cca_centroids2 <-
   rename(perch_FA_prop_cca_centroids2,
          cCCA1 = CCA1,
          cCCA2 = CCA2)
-
-perch_FA_prop_cca_site2 <-
-  left_join(perch_FA_prop_cca_site2,
-            perch_FA_prop_cca_centroids2,
-            by = "corral")
 
 perch_FA_prop_cca_bp2 <- 
   as.data.frame(scores(perch_FA_prop_cca, 
@@ -588,13 +571,13 @@ perchccaplot1 <-
             aes(x =  CCA1*5,
                 y = CCA2 * 30,
                 label = label),
-            size = 8 / .pt,
+            size = 10 / .pt,
             colour =  "grey10") +
   geom_segment(data = perch_FA_prop_cca_bp1,
                aes(x = 0,
                    y = 0,
-                   xend = CCA1*4,
-                   yend = CCA2 * 4,
+                   xend = CCA1,
+                   yend = CCA2,
                    colour = vars),
                alpha = 0.75,
                linewidth = 1,
@@ -610,7 +593,7 @@ perchccaplot1 <-
                          expression(paste("Exposure Concentration (MPs" ~
                                             L ^ -1 * ")")),
                        option = "plasma") +
-  scale_x_continuous(limits = c(-0.3, 0.4)) +
+  scale_x_continuous(limits = c(-0.35, 0.35)) +
   labs(x = "CCA1",
        y = "CCA2") +
   theme1 +
@@ -639,14 +622,14 @@ perchccaplot2 <-
                   aes(x = CCA1,
                       y = CCA2,
                       label = FA),
-                  size = 7 / .pt,
+                  size = 8 / .pt,
               colour = "blue3",
               box.padding = 0) +
     geom_text(data = perch_FA_prop_cca_bp2,
               aes(x = CCA1*0.22,
                   y = CCA2*1.25,
                   label = label),
-              size = 8 / .pt,
+              size = 10 / .pt,
               colour =  "grey10") +
     geom_segment(data = perch_FA_prop_cca_bp2,
                  aes(x = 0,
@@ -672,6 +655,8 @@ perchccaplot2 <-
          y = "CCA2") +
     theme1 +
   theme(legend.position = "none")
+
+#### Combine plots ----
 
 png("Perch FA Proportions CCA.png",
     width = 18,
@@ -837,17 +822,16 @@ perch_FA_prop_cca_bp3 <-
                        display = "bp",
                        scaling = 2))
 
-perch_FA_prop_cca_bp3 <- perch_FA_prop_cca_bp3[c(7:8),]
+perch_FA_prop_cca_bp3 <- perch_FA_prop_cca_bp3[8,]
 
-perch_FA_prop_cca_bp3$label <- c("Body Weight",
-                                 "Gonad Weight")
+perch_FA_prop_cca_bp3$label <- "Gonad Weight"
 
 
 ##### Plot ----
 
 png("Perch FA Proportions CCA Reduced.png",
-    width = 8,
-    height= 8, 
+    width = 8.84,
+    height= 7, 
     units = "cm",
     res = 600)
 
@@ -862,21 +846,16 @@ ggplot() +
                   aes(x = CCA1,
                       y = CCA2,
                       label = FA),
-                  size = 7 / .pt,
+                  size = 8 / .pt,
                   colour = "blue3",
                   box.padding = 0,
-                  max.overlaps = 20) +
+                  max.overlaps = 20,
+                  alpha = 0.75) +
   geom_text(data = perch_FA_prop_cca_bp3,
-            aes(x = CCA1*1.1,
-                y = CCA2*1.3,
+            aes(x = CCA1*1.2,
+                y = CCA2*1.2,
                 label = label),
-            size = 8 / .pt,
-            colour =  "grey10") +
-  geom_text(data = perch_FA_prop_cca_centroids3,
-            aes(x = CCA1,
-                y = CCA2,
-                label = vars),
-            size = 8 / .pt,
+            size = 10 / .pt,
             colour =  "grey10") +
   geom_segment(data = perch_FA_prop_cca_bp3,
                aes(x = 0,
@@ -900,7 +879,7 @@ ggplot() +
                        option = "plasma") +
   labs(x = "CCA1", 
        y = "CCA2") +
-  scale_x_continuous(limits = c(-0.7, 0.9)) +
+  scale_x_continuous(limits = c(-0.65, 1)) +
   theme1 +
   theme(legend.position = "none")
 
