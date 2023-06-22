@@ -109,20 +109,6 @@ perch_FA_prop2$scaled.pop <-
   as.numeric(scale(perch_FA_prop2$YP.end,
                    center = TRUE))
 
-# Re-scale response so it sums to 1
-
-perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] 
-
-adjusted_Y <- 
-  DR_data(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)] / 
-            rowSums(perch_FA_prop2[,c(7:16,18:25,27:34,36:44)]))
-
-perch_FA_dir_mod1 <-
-  DirichReg(adjusted_Y ~ scaled.body.weight + scaled.MPconcentration, 
-            data = perch_FA_prop2)
-perch_FA_dir_mod1
-summary(perch_FA_dir_mod1)
-
 
 
 ## Prep zooplankton data ----
@@ -671,74 +657,6 @@ plot_grid(perchccaplot1,
           axis = "b",
           labels = c("A", "B"),
           label_size = 12)
-
-dev.off()
-
-#### Plot with site scores ----
-
-png("Perch FA Proportions CCA Scaling 2 with Sites.png",
-    width = 8,
-    height= 9, 
-    units = "cm",
-    res = 600)
-
-ggplot() +
-  geom_hline(aes(yintercept = 0),
-             linetype = "dashed",
-             linewidth = 0.25) +
-  geom_vline(aes(xintercept = 0),
-             linetype = "dashed",
-             linewidth = 0.25) +
-  geom_point(data = perch_FA_prop_cca_site2,
-             aes(x = cCCA1,
-                 y = cCCA2,
-                 fill = vars),
-             size = 2,
-             shape = 21,
-             alpha = 0.95,
-             colour = "grey30") +
-  geom_text(data = perch_FA_prop_cca_species2,
-            aes(x = CCA1,
-                y = CCA2,
-                label = FA),
-            size = 7 / .pt,
-            colour = "blue3") +
-  geom_text(data = perch_FA_prop_cca_bp2,
-            aes(x = CCA1,
-                y = CCA2*10,
-                label = label),
-            size = 8 / .pt,
-            colour =  "grey10") +
-  geom_segment(data = perch_FA_prop_cca_bp2,
-               aes(x = 0,
-                   y = 0,
-                   xend = CCA1,
-                   yend = CCA2,
-                   colour = vars),
-               alpha = 0.75,
-               linewidth = 0.5,
-               arrow = arrow(angle = 20,
-                             length = unit(0.25, "cm"),
-                             type = "open"),
-               colour = "grey10") +
-  scale_colour_viridis_d(name =
-                           expression(paste("Exposure Concentration (MPs" ~
-                                              L ^ -1 * ")")),
-                         option = "plasma") +
-  scale_fill_viridis_d(name =
-                         expression(paste("Exposure Concentration (MPs" ~
-                                            L ^ -1 * ")")),
-                       option = "plasma") +
-  labs(x = "CCA1", 
-       y = "CCA2") +
-  theme1 +
-  theme(legend.position = "bottom") +
-  guides(fill = guide_legend(nrow = 2,
-                             byrow = TRUE,
-                             title.position = "top"),
-         colour = guide_legend(nrow = 2,
-                               byrow =  TRUE,
-                               title.position = "top"))
 
 dev.off()
 
