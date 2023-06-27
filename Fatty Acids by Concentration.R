@@ -489,12 +489,15 @@ perchALA.LINmod1 <-
             log(gonad.weight) +
             sex +
             TL + 
+            log(MPconcentration + 6) +
             (1 | corral),
           data = perch_FA2sex)
 
 plot(simulateResiduals(perchALA.LINmod1))
 
 summary(perchALA.LINmod1)
+# negative correlation with gonad weight
+# positive correlation with total length
 
 anova(perchALA.LINmod1,
       update(perchALA.LINmod1, ~-corral))  # corral significant
@@ -502,11 +505,9 @@ anova(perchALA.LINmod1,
 perchALA.LINpred <-
   ggemmeans(perchALA.LINmod1,
             terms = c("gonad.weight",
-                      "TL",
-                      "CCA1")) %>% 
+                      "TL")) %>% 
   rename(gonad.weight = x,
-         TL = group,
-         CCA1 = facet)
+         TL = group)
 
 png("Perch ALA-LIN Plot.png",
     width = 18,
@@ -555,6 +556,7 @@ perchPUFA.SMUFAmod1 <-
 plot(simulateResiduals(perchPUFA.SMUFAmod1))
 
 summary(perchPUFA.SMUFAmod1)
+# nothing is significant
 
 anova(perchPUFA.SMUFAmod1,
       update(perchPUFA.SMUFAmod1, ~-corral))  # corral not significant
@@ -597,13 +599,14 @@ perchARA.LINmod1 <-
             gonad.weight +
             sex +
             body.weight + 
+            log(MPconcentration + 6) +
             (1 | corral),
           data = perch_FA2sex)
 
 plot(simulateResiduals(perchARA.LINmod1))
 
 summary(perchARA.LINmod1)
-# no effect
+# nothing is significant
 
 anova(perchARA.LINmod1,
       update(perchARA.LINmod1, ~-corral))  # corral not significant
@@ -646,6 +649,7 @@ perchDHA.ALAmod1 <-
             gonad.weight +
             sex +
             body.weight +
+            log(MPconcentration + 6) +
             (1 | corral),
           data = perch_FA2sex)
 
@@ -653,6 +657,8 @@ plot(simulateResiduals(perchDHA.ALAmod1))
 # positive correlation with gonad weight
 
 summary(perchDHA.ALAmod1)
+# positive correlation with gonad weight
+# weak negative correlation with body weight
 
 anova(perchDHA.ALAmod1,
       update(perchDHA.ALAmod1, ~-corral))  # corral not significant
@@ -693,14 +699,16 @@ plot(DHA.ARA ~ corral, data = perch_FA2sex)
 perchDHA.ARAmod1 <- 
   glmmTMB(DHA.ARA ~
             TL +
-            log(gonad.weight) + 
+            gonad.weight + 
             sex +
+            log(MPconcentration + 6) +
             (1 | corral),
           data = perch_FA2sex)
 
 plot(simulateResiduals(perchDHA.ARAmod1))
 
 summary(perchDHA.ARAmod1)
+# nothing is significant
 
 anova(perchDHA.ARAmod1,
       update(perchDHA.ARAmod1, ~-corral))  # corral not significant
