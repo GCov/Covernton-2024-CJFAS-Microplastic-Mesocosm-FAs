@@ -320,9 +320,9 @@ perch_FA_prop_PCA_site <- perch_FA_prop_pca$CA$u
 perch_FA_prop_PCA_species <- data.frame(perch_FA_prop_pca$CA$v)
 
 trimmed.FA.names <- 
-  c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "18:2(n-6)", 
-    "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", "18:4(n-3)", "20:5(n-3)", 
-    "22:5(n-3)", "22:6(n-3)")
+  c("14:0", "16:0", "18:0", "16:1n-7", "18:1n-7", "18:1n-9", "18:2n-6", 
+    "20:4n-6", "22:5n-6", "18:3n-3", "18:4n-3", "20:5n-3", 
+    "22:5n-3", "22:6n-3")
 
 perch_FA_prop_PCA_species$FA <- trimmed.FA.names
 
@@ -415,11 +415,6 @@ anova(perch_FA_prop_cca, by = "onedf")
 
 plot(perch_FA_prop_cca, scaling = 1, display = c("lc", "wa", "cn"))
 plot(perch_FA_prop_cca, scaling = 2, display = c("sp", "cn"))
-
-trimmed.FA.names <- 
-  c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "18:2(n-6)", 
-    "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", "18:4(n-3)", "20:5(n-3)", 
-    "22:5(n-3)", "22:6(n-3)")
 
 
 #### Pull out scores for scaling 1----
@@ -749,7 +744,7 @@ perch_FA_prop_cca_bp3$label <- "Gonad Weight"
 
 png("Perch FA Proportions CCA Reduced.png",
     width = 8.84,
-    height= 7, 
+    height= 7.8, 
     units = "cm",
     res = 600)
 
@@ -773,7 +768,7 @@ ggplot() +
             aes(x = CCA1*1.2,
                 y = CCA2*1.2,
                 label = label),
-            size = 10 / .pt,
+            size = 8 / .pt,
             colour =  "grey10") +
   geom_segment(data = perch_FA_prop_cca_bp3,
                aes(x = 0,
@@ -797,7 +792,7 @@ ggplot() +
                        option = "plasma") +
   labs(x = "CCA1", 
        y = "CCA2") +
-  scale_x_continuous(limits = c(-0.65, 1)) +
+  scale_x_continuous(limits = c(-0.3, 0.9)) +
   theme1 +
   theme(legend.position = "none")
 
@@ -1083,6 +1078,14 @@ zoop.end.long <-
   select(-c(7:30,32:39,41,43:50)) %>% 
   pivot_longer(cols = c(7:9),
                names_to = "FA")
+
+zoop.end.long$timepoint <- 
+  as.factor(zoop.end.long$date) %>% 
+  recode_factor(`2021-07-06` = "Mid-point",
+                `2021-08-09` = "End")
+
+
+
 png("Zoop Compositional HUFA Plot.png",
     width = 8.84,
     height= 6, 
@@ -1090,7 +1093,7 @@ png("Zoop Compositional HUFA Plot.png",
     res = 500)
 
 ggplot(zoop.end.long) +
-  geom_boxplot(aes(x = as.factor(date),
+  geom_boxplot(aes(x = timepoint,
                   y = value,
                   fill = FA)) +
   scale_fill_viridis_d(name = "",
@@ -1149,9 +1152,9 @@ zoop_FA_prop_PCA_site <- zoop_FA_prop_pca$CA$u
 zoop_FA_prop_PCA_species <- data.frame(zoop_FA_prop_pca$CA$v)
 
 trimmed.FA.names.zoops <- 
-  c("14:0", "16:0", "18:0", "16:1(n-7)", "18:(1n-7)", "18:1(n-9)", "22:1(n-9)",
-    "18:2(n-6)", "18:3(n-6)", "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
-    "18:4(n-3)", "20:5(n-3)", "22:6(n-3)")
+  c("14:0", "16:0", "18:0", "16:1n-7", "18:1n-7", "18:1n-9", "22:1n-9",
+    "18:2n-6", "18:3n-6", "20:4n-6", "22:5n-6", "18:3n-3", 
+    "18:4n-3", "20:5n-3", "22:6n-3")
 
 zoop_FA_prop_PCA_species$FA <- trimmed.FA.names.zoops
 
@@ -1256,13 +1259,6 @@ zoop_FA_prop_cca_site1 <-
 zoop_FA_prop_cca_species1 <- 
   as.data.frame(scores(zoop_FA_prop_cca, display = "species",
                        scaling = 1))
-
-trimmed.FA.names.zoops <- 
-  c("14:0", "16:0", "18:0", 
-    "16:1(n-7)", "18:1(n-7)", "18:1(n-9)", 
-    "22:1(n-9)",  "18:2(n-6)", "18:3(n-6)", 
-    "20:4(n-6)", "22:5(n-6)", "18:3(n-3)", 
-    "18:4(n-3)", "20:5(n-3)", "22:6(n-3)")
 
 zoop_FA_prop_cca_species1$FA <- trimmed.FA.names.zoops
 
@@ -1521,8 +1517,6 @@ plot_grid(zoopFAplot1,
           label_size = 12)
 
 dev.off()
-
-
 
 ### nMDS ----
 
