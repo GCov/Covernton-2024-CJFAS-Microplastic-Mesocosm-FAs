@@ -1745,6 +1745,14 @@ levels(zoop_FA_prop_long$FA) <-
     "n-6 PUFA",
     "SFA")
 
+zoop_FA_prop_long$timepoint <- 
+  as.factor(zoop_FA_prop_long$date)
+  
+levels(zoop_FA_prop_long$timepoint) <- 
+  c("Start",
+    "Mid-point",
+    "End")
+
 png("Zooplankton FAs Proportionss Plot.png",
     width = 18,
     height= 12, 
@@ -1755,11 +1763,11 @@ ggplot(zoop_FA_prop_long) +
   geom_col(aes(x = reorder(ID, date),
                y = value,
                fill = FA,
-               colour = as.factor(date)),
+               colour = timepoint),
            size = 0.75) +
   scale_fill_viridis_d(option = "turbo",
                        name = "") +
-  scale_colour_viridis_d(name = "Date",
+  scale_colour_viridis_d(name = "Time Point",
                          option = "plasma") +
   labs(x = "Sample",
        y = "Proportion") +
