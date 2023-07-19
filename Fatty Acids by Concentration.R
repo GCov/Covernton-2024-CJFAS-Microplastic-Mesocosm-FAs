@@ -263,7 +263,7 @@ perchEPA_pred <-
 
 png("Perch EPA Plot.png",
     width = 8.84,
-    height= 4, 
+    height= 5, 
     units = "cm",
     res = 500)
 
@@ -303,16 +303,16 @@ summary(perchDHAmod1)
 
 perchDHA_pred <- 
   ggemmeans(perchDHAmod1,
-            terms = c("MPconcentration")) %>%
+            terms = c("MPconcentration [0.001:29240, by = 1000]")) %>%
   rename(MPconcentration = x)
 
 png("Perch DHA Plot.png",
     width = 8.84,
-    height= 4, 
+    height= 5, 
     units = "cm",
     res = 500)
 
-ggplot(perch_FA2sex) +
+ggplot(perch_FA3) +
   geom_ribbon(data = perchDHA_pred,
               aes(x = MPconcentration,
                   ymin = conf.low,
@@ -462,6 +462,35 @@ plot(simulateResiduals(perchDHAmod1))
 
 summary(perchDHAmod2)  
 # weak positive correlation with body weight
+
+perchDHA_pred2 <- 
+  ggemmeans(perchDHAmod2,
+            terms = c("body.weight")) %>%
+  rename(body.weight = x)
+
+png("Perch DHA Plot 2.png",
+    width = 8.84,
+    height= 5, 
+    units = "cm",
+    res = 500)
+
+ggplot(perch_FA2sex) +
+  geom_ribbon(data = perchDHA_pred2,
+              aes(x = body.weight,
+                  ymin = conf.low,
+                  ymax = conf.high),
+              alpha = 0.3) +
+  geom_line(data = perchDHA_pred2,
+            aes(x = body.weight,
+                y = predicted)) +
+  geom_point(aes(x = body.weight,
+                 y = C_22.6n.3),
+             size = 1) +
+  labs(x = "Body Weight (g)",
+       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+  theme1
+
+dev.off()
 
 #### n-6 DPA ----
 

@@ -239,7 +239,7 @@ EPA.prop.pred <-
 
 png("Perch Compositional EPA Plot.png",
     width = 8.84,
-    height= 4, 
+    height= 5, 
     units = "cm",
     res = 500)
 

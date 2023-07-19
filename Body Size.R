@@ -113,7 +113,8 @@ ggplot(perch2021) +
                        name = "Treatment") +
   scale_x_continuous(trans = "log1p",
                      breaks = sort(unique(perch2021$MPconcentration))) +
-  theme1
+  theme1 +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
 dev.off()
 
@@ -170,3 +171,14 @@ summary(fish2021.mod2)
 plot(residuals(fish2021.mod1) ~ fitted(fish2021.mod1))
 abline(0,0)
 
+## Check whether regression is better
+
+fish2021.mod2 <-
+  glmmTMB(body.weight ~ log(MPconcentration + 6) + (1 | corral),
+      data = perch2021)
+
+plot(simulateResiduals(fish2021.mod2))
+
+plot(body.weight ~ log(MPconcentration + 6), data = perch2021)
+
+plot(residuals(fish2021.mod2) ~ predict(fish2021.mod2))
