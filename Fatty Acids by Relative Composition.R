@@ -1230,7 +1230,7 @@ anova(zoop_FA_prop_rda, by = "onedf")
 ### CCA ----
 
 zoop_FA_prop_cca <- 
-  cca(trimmed_zoop_FA ~ corral + as.factor(date),
+  cca(trimmed_zoop_FA ~ corral + as.factor(date) + YP.end,
       scale. = FALSE,
       data = zoop_FA_prop_covariates)
 

@@ -4,6 +4,7 @@ library(dplyr)
 library(glmmTMB)
 library(DHARMa)
 library(emmeans)
+library(ggeffects)
 
 theme1 <-
   theme_bw() +
@@ -173,12 +174,69 @@ abline(0,0)
 
 ## Check whether regression is better
 
+names(perch2021)
+
 fish2021.mod2 <-
-  glmmTMB(body.weight ~ log(MPconcentration + 6) + (1 | corral),
+  glmmTMB(body.weight ~ log(MPconcentration + 6) + YP.end,
       data = perch2021)
 
 plot(simulateResiduals(fish2021.mod2))
 
+summary(fish2021.mod2)
+
 plot(body.weight ~ log(MPconcentration + 6), data = perch2021)
+lines(predict(fish2021.mod2, re.form = NA) ~ log(perch2021$MPconcentration + 6))
 
 plot(residuals(fish2021.mod2) ~ predict(fish2021.mod2))
+
+plotResiduals(fish2021.mod2, perch2021$date.collected)
+plotResiduals(fish2021.mod2, perch2021$YP.end)
+
+perch.body.predict <-
+  as.data.frame(ggemmeans(fish2021.mod2,
+                          c("MPconcentration [0.001:29240,by = 1000]", 
+                            "YP.end"))) %>% 
+  rename(MPconcentration = x,
+         YP.end = group)
+
+ggemmeans(fish2021.mod2,
+          c("YP.end"))
+
+perch.body.predict$YP.end <- as.character(perch.body.predict$YP.end)
+perch.body.predict$YP.end <- as.numeric(perch.body.predict$YP.end)
+
+png("2021 Perch Weights 2.png",
+    width = 8.84,
+    height= 8, 
+    units = "cm",
+    res = 600)
+
+ggplot(perch2021) +
+  geom_point(aes(x = MPconcentration,
+                 y = body.weight,
+                 fill = reorder(as.factor(YP.end), YP.end, mean)),
+             shape = 21) +
+  geom_ribbon(data = perch.body.predict,
+              aes(x = MPconcentration,
+                  ymin = conf.low,
+                  ymax = conf.high,
+                  fill = reorder(as.factor(YP.end), YP.end, mean)),
+              alpha = 0.3) +
+  geom_line(data = perch.body.predict,
+            aes(x = MPconcentration,
+                y = predicted,
+                colour = reorder(as.factor(YP.end), YP.end, mean))) +
+  scale_x_continuous(trans = "log1p",
+                     breaks = c(0, 6, 100, 414, 1710, 7071, 29240)) +
+  scale_fill_viridis_d(option = "plasma",
+                       name = "Surviving Yellow Perch") +
+  scale_colour_viridis_d(option = "plasma",
+                         name = "Surviving Yellow Perch") +
+  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
+       y = "Body Weight (g)") +
+  theme1 +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 2),
+         fill = guide_legend(nrow = 2))
+
+dev.off()
