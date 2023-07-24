@@ -209,8 +209,8 @@ dev.off()
 #### DHA ----
 
 DHA.prop.mod1 <- 
-  glmmTMB(C_22.6n.3 ~ 
-            TL + 
+  glmmTMB(C_22.6n.3 ~  
+            body.weight +
             log(MPconcentration + 1) +
             (1 | corral), 
           data = perch_FA_prop2)
@@ -222,8 +222,8 @@ summary(DHA.prop.mod1)  # no effect of MP concentration
 #### EPA ----
 
 EPA.prop.mod1 <- 
-  glmmTMB(C_20.5n.3 ~ 
-            TL +
+  glmmTMB(C_20.5n.3 ~  
+            body.weight +
             log(MPconcentration + 1) +
             (1 | corral), 
           data = perch_FA_prop2)
@@ -234,8 +234,8 @@ summary(EPA.prop.mod1)  # positive correlation with body size
 
 EPA.prop.pred <-
   ggemmeans(EPA.prop.mod1, 
-            terms = "TL") %>% 
-  rename(TL = x)
+            terms = "body.weight") %>% 
+  rename(body.weight = x)
 
 png("Perch Compositional EPA Plot.png",
     width = 8.84,
@@ -245,18 +245,18 @@ png("Perch Compositional EPA Plot.png",
 
 ggplot() +
   geom_ribbon(data = EPA.prop.pred,
-              aes(x = TL,
+              aes(x = body.weight,
                   ymin = conf.low,
                   ymax = conf.high),
               alpha = 0.3) +
   geom_line(data = EPA.prop.pred,
-            aes(x = TL,
+            aes(x = body.weight,
                 y = predicted)) +
   geom_point(data = perch_FA_prop2,
-             aes(x = TL,
+             aes(x = body.weight,
                  y = C_20.5n.3),
              size = 1) +
-  labs(x = "Total Length (cm)",
+  labs(x = "Body Weight (g)",
        y = "Proportion EPA") +
   theme1
 
@@ -265,8 +265,8 @@ dev.off()
 #### ARA ----
 
 ARA.prop.mod1 <- 
-  glmmTMB(C_20.4n.6 ~ 
-            TL + 
+  glmmTMB(C_20.4n.6 ~  
+            body.weight +
             log(MPconcentration + 1) +
             (1 | corral), 
           data = perch_FA_prop2)
@@ -1095,11 +1095,13 @@ png("Zoop Compositional HUFA Plot.png",
 ggplot(zoop.end.long) +
   geom_boxplot(aes(x = timepoint,
                   y = value,
-                  fill = FA)) +
+                  fill = FA),
+               alpha = 0.6) +
   scale_fill_viridis_d(name = "",
                        labels = c("ARA",
                                   "EPA",
-                                  "DHA")) +
+                                  "DHA"),
+                       option = "magma") +
   labs(x = "Date",
        y = "Proportion") +
   theme1
@@ -1350,7 +1352,7 @@ ggplot() +
                  y = CCA2,
                  fill = label,
                  shape = point),
-             size = 2,
+             size = 3,
              alpha = 0.75,
              colour = "grey30") +
   geom_text_repel(data = zoop_FA_prop_cca_cn1,
@@ -1365,7 +1367,7 @@ ggplot() +
   scale_fill_viridis_d(name =
                          expression(paste("Exposure Concentration (MPs" ~
                                             L ^ -1 * ")")),
-                       option = "plasma") +
+                       option = "inferno") +
   labs(x = "CCA1", 
        y = "CCA2") +
   guides(fill=guide_legend(override.aes=list(shape=21))) +

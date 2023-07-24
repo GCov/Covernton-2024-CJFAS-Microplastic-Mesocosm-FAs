@@ -9,6 +9,7 @@ library(vegan)
 library(MuMIn)
 library(Hmsc)
 library(ape)
+library(ggeffects)
 
 theme1 <-
   theme_bw() +
@@ -32,6 +33,12 @@ perch_diet <- read.csv("perch_diet.csv", header = TRUE)
 
 perch_diet$MPconcentration <- as.numeric(perch_diet$MPconcentration)
 perch_diet$corral <- as.factor(perch_diet$corral)
+
+# Add number of surviving perch in each corral
+
+perch_diet <-
+  left_join(perch_diet,
+            perch2021[,c(2, 13)])
 
 # Count plots ----
 
@@ -210,12 +217,11 @@ dev.off()
 
 # GLMM for total individuals ----
 
-# Standardize predictors
 # Poisson
 mod1 <- glmmTMB(total.animals ~ 
-                  scale(MPconcentration, center = TRUE) + 
-                  scale(body.length, center = TRUE) +  
-                  (1 | corral),
+                  log(MPconcentration + 6) + 
+                  body.weight +  
+                  YP.end,
                 family = poisson(link = "log"),
                 data = perch_diet)  
 summary(mod1)
@@ -224,9 +230,9 @@ plot(res1)
 
 # NB with linear variance
 mod2 <- glmmTMB(total.animals ~ 
-                  scale(MPconcentration, center = TRUE) + 
-                  scale(body.length, center = TRUE) +  
-                  (1 | corral),
+                  log(MPconcentration + 6) + 
+                  body.weight +  
+                  YP.end,
                 family = nbinom1(link = "log"),
                 data = perch_diet)
 summary(mod2)
@@ -235,30 +241,21 @@ plot(res2)
 
 # NB with quadratic variance
 mod3 <- glmmTMB(total.animals ~ 
-                  scale(MPconcentration, center = TRUE) + 
-                  scale(body.length, center = TRUE) +  
-                  (1 | corral),
+                  log(MPconcentration + 6) + 
+                  body.weight +
+                  YP.end,
                 family = nbinom2(link = "log"),
                 data = perch_diet)
 summary(mod3)
 res3 <- simulateResiduals(mod3)
 plot(res3)
 
-AICc(mod1, mod2, mod3)  # mod3 is the better fit
-
 ## Plot model predictions ----
 
-simdata <- data.frame(MPconcentration = seq(0, max(perch_diet$MPconcentration), 
-                                            length.out = 1000),
-                      body.length = rep(mean(perch_diet$body.length), 1000),
-                      corral = rep(NA, 1000))
-
-simdata$mean <- predict(mod3, simdata)
-
-simdata$se <- as.numeric(predict(mod3,simdata, se.fit = TRUE)$se.fit)
-
-simdata$upper <- with(simdata, mean + 1.96*se)
-simdata$lower <- with(simdata, mean - 1.96*se)
+ingestionpred <- 
+  as.data.frame(ggemmeans(mod3,
+                          terms = "YP.end")) %>% 
+  rename(YP.end = x)
 
 png("Perch Diet Totals.png",
     width = 9,
@@ -267,30 +264,25 @@ png("Perch Diet Totals.png",
     res = 600)
 
 ggplot() +
-  geom_ribbon(data = simdata,
-              aes(x = MPconcentration,
-                  ymin = exp(lower),
-                  ymax = exp(upper)),
+  geom_ribbon(data = ingestionpred,
+              aes(x = YP.end,
+                  ymin = conf.low,
+                  ymax = conf.high),
               fill = "lime green",
               alpha = 0.3) +
-  geom_line(data = simdata,
-            aes(x = MPconcentration,
-                y = exp(mean)),
-            size = 0.5,
-            linetype = "dashed") +
+  geom_line(data = ingestionpred,
+            aes(x = YP.end,
+                y = predicted),
+            size = 0.5) +
   geom_point(data = perch_diet,
-             aes(x = MPconcentration,
+             aes(x = YP.end,
                  y = total.animals)) +
   scale_y_continuous(expand = c(0.009,0.005),
                      breaks = c(0, 1, 10, 100, 1000)) +
   coord_trans(y = "log1p") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000),
-                     expand = c(0.01, 0.01)) +
-  labs(x = expression(paste("MP Exposure Concentration (particles"~L^-1*")")),
+  labs(x = "Number of Surviving Perch",
        y = "Total number of Individuals (log scale)") +
-  theme1 +
-  theme(plot.margin = margin(0.1, 0.7, 0.1, 0.1, unit = "cm"))
+  theme1
 
 dev.off()
 
@@ -558,9 +550,9 @@ ggplot() +
             size = 7 / .pt,
             colour =  "blue3") +
   scale_fill_viridis_d(name = "Corral",
-                       option = "plasma") +
+                       option = "inferno") +
   scale_colour_viridis_d(name = "Corral",
-                         option = "plasma") +
+                         option = "inferno") +
   scale_x_continuous(limits = c(-2, 2)) +
   scale_y_continuous(limits = c(-2, 1)) +
   theme1 +
@@ -583,7 +575,7 @@ biplot.pcoa(dietpcoa, Y2)
 set.seed(425)
 
 diet_PERMANOVA <- 
-  adonis2(Y2 ~ corral + body.length,
+  adonis2(Y2 ~ corral + body.weight,
           method = "bray",
           by = "margin",
           data = X2)
@@ -591,7 +583,7 @@ diet_PERMANOVA <-
 diet_PERMANOVA
 
 diet_PERMANOVA <- 
-  adonis2(Y2 ~ corral + body.length,
+  adonis2(Y2 ~ corral + body.weight,
           method = "bray",
           by = "onedf",
           data = X2)
@@ -754,7 +746,7 @@ perch_diet$stdate <-
 copepodmod1 <-
   glmmTMB(cyclopoida ~ 
             body.length +
-            stdate +
+            log(MPconcentration + 6) +
             (1 | corral),
           family = nbinom1(link = "log"),
           data = perch_diet)

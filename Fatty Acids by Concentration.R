@@ -141,7 +141,7 @@ nrow(perch_FA2sex)  # 18 fish remaining
 plot(total_FAs ~ TL, data = perch_FA2)
 
 perchFAmod1 <- glmmTMB(log(total_FAs) ~ 
-                         TL +
+                         body.weight +
                          log(MPconcentration + 6) +
                          (1 | corral),
                        data = perch_FA3)
@@ -247,7 +247,7 @@ ggplot(perch_FAlong) +
 perchEPAmod1 <- 
   glmmTMB(C_20.5n.3 ~
             log(MPconcentration + 6) + 
-            TL +
+            body.weight +
             (1 | corral),
           data = perch_FA3)
 
@@ -258,8 +258,8 @@ summary(perchEPAmod1)
 
 perchEPA_pred <- 
   ggemmeans(perchEPAmod1,
-            terms = c("TL")) %>%
-  rename(TL = x)
+            terms = c("body.weight")) %>%
+  rename(body.weight = x)
 
 png("Perch EPA Plot.png",
     width = 8.84,
@@ -269,19 +269,19 @@ png("Perch EPA Plot.png",
 
 ggplot(perch_FA3) +
   geom_ribbon(data = perchEPA_pred,
-              aes(x = TL,
+              aes(x = body.weight,
                   ymin = conf.low,
                   ymax = conf.high),
               alpha = 0.3) +
   geom_line(data = perchEPA_pred,
-            aes(x = TL,
+            aes(x = body.weight,
                 y = predicted)) +
-  geom_point(aes(x = TL,
+  geom_point(aes(x = body.weight,
                  y = C_20.5n.3),
              size = 1) +
   scale_colour_viridis_d(option = "plasma",
                          name = "Total Length (cm)") +
-  labs(x = "Total Length (cm)",
+  labs(x = "Body Weight (g)",
        y = expression(paste("Concentration (mg "~g^-1*")"))) +
   theme1
 
@@ -291,8 +291,8 @@ dev.off()
 
 perchDHAmod1 <- 
   glmmTMB(C_22.6n.3 ~
-            log(MPconcentration + 6) +
-            TL +
+            log(MPconcentration + 6) + 
+            body.weight +
             (1 | corral),
           data = perch_FA3)
 
@@ -303,7 +303,7 @@ summary(perchDHAmod1)
 
 perchDHA_pred <- 
   ggemmeans(perchDHAmod1,
-            terms = c("MPconcentration [0.001:29240, by = 1000]")) %>%
+            terms = c("MPconcentration [0.001:29240, by = 200]")) %>%
   rename(MPconcentration = x)
 
 png("Perch DHA Plot.png",
@@ -336,7 +336,7 @@ dev.off()
 
 perchARAmod1 <- 
   glmmTMB(C_20.4n.6 ~
-            TL + 
+            body.weight + 
             log(MPconcentration + 6) +
             (1 | corral),
           data = perch_FA3)

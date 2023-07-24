@@ -39,6 +39,15 @@ perch2021 <-
   perch2021 %>%
   filter(!is.na(TL))
 
+# Summarize
+
+perch2021 %>% 
+  group_by(MPconcentration, YP.end) %>% 
+  summarize(mean.body.weight = mean(body.weight),
+            sd.body.weight = sd(body.weight),
+            mean.TL = mean(TL),
+            sd.TL = sd(TL))
+
 #### Compare body size with MP concentration ----
 
 fish2021.mod1 <-
@@ -212,27 +221,29 @@ png("2021 Perch Weights 2.png",
     res = 600)
 
 ggplot(perch2021) +
-  geom_point(aes(x = MPconcentration,
-                 y = body.weight,
-                 fill = reorder(as.factor(YP.end), YP.end, mean)),
-             shape = 21) +
   geom_ribbon(data = perch.body.predict,
               aes(x = MPconcentration,
                   ymin = conf.low,
                   ymax = conf.high,
-                  fill = reorder(as.factor(YP.end), YP.end, mean)),
-              alpha = 0.3) +
+                  fill = YP.end,
+                  group = as.factor(YP.end)),
+              alpha = 0.4) +
   geom_line(data = perch.body.predict,
             aes(x = MPconcentration,
                 y = predicted,
-                colour = reorder(as.factor(YP.end), YP.end, mean))) +
+                colour = YP.end,
+                group = as.factor(YP.end))) +
+  geom_point(aes(x = MPconcentration,
+                 y = body.weight,
+                 fill = YP.end),
+             shape = 21) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 6, 100, 414, 1710, 7071, 29240)) +
-  scale_fill_viridis_d(option = "plasma",
+  scale_fill_viridis_c(option = "plasma",
                        name = "Surviving Yellow Perch") +
-  scale_colour_viridis_d(option = "plasma",
+  scale_colour_viridis_c(option = "plasma",
                          name = "Surviving Yellow Perch") +
-  labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
+  labs(x = expression(paste("Microplastic exposure concentration (particles"~L^-1*")")),
        y = "Body Weight (g)") +
   theme1 +
   theme(legend.position = "bottom") +
