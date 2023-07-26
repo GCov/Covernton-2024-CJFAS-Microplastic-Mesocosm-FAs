@@ -773,6 +773,15 @@ dev.off()
 
 # Zooplankton Analysis----
 
+## Plot different FAs
+
+names(zoop_FA)
+
+plot(total_SFAs ~ date, data = zoop_FA)
+plot(total_MUFAs ~ date, data = zoop_FA)
+plot(total_N.3_PUFA ~ date, data = zoop_FA)
+plot(total_N.6_PUFA ~ date, data = zoop_FA)
+
 # Convert date to a centered numeric value
 
 zoop_FA$date2 <- 
@@ -837,7 +846,7 @@ dev.off()
 
 ## Individual FAs ----
 
-# Look at only mid and enpoints 
+# Look at only mid and endpoints 
 
 zoop_FA_exp <-
   zoop_FA %>% 
@@ -852,7 +861,7 @@ zoopLAmod1 <- glmmTMB(C_18.2n.6 ~
 
 plot(simulateResiduals(zoopLAmod1))
 
-summary(zoopLAmod1)  # no effect
+summary(zoopLAmod1)  # LA lower at midpoint - up but still lower at end
 
 zoopLA_sim <- expand.grid(MPconcentration = seq(from = 0,
                                                  to = 29240,
@@ -908,7 +917,7 @@ zoopALAmod1 <- glmmTMB(C_18.3n.3 ~
 
 plot(simulateResiduals(zoopALAmod1))
 
-summary(zoopALAmod1)  # no effect
+summary(zoopALAmod1)  # ALA lower at midpoint, up but still lower at end
 
 zoopALA_sim <- expand.grid(MPconcentration = seq(from = 0,
                                                  to = 29240,
@@ -1293,6 +1302,62 @@ ggplot() +
                       expression(paste("Exposure Concentration (MPs"~L^-1*")"))) +
   scale_shape(name = "Date") +
   theme1
+
+dev.off()
+
+## Plot compositon by absolute concentration ----
+
+zoop_FA_long <- 
+  zoop_FA %>% 
+  pivot_longer(cols = c(17,26,35,45),
+               names_to = "FA")
+
+zoop_FA_long$FA <- as.factor(zoop_FA_long$FA)
+
+levels(zoop_FA_long$FA) <-
+  c("MUFA",
+    "n-3 PUFA",
+    "n-6 PUFA",
+    "SFA")
+
+
+zoop_FA_long$timepoint <- 
+  as.factor(zoop_FA_long$date)
+
+levels(zoop_FA_long$timepoint) <- 
+  c("Start",
+    "Mid-point",
+    "End")
+
+zoop_FA_long %>% 
+  group_by(FA, timepoint) %>% 
+  summarize(mean = mean(value),
+            sd = sd(value))
+
+png("Zooplankton Absolute Composition Plot.png",
+    width = 18,
+    height= 12, 
+    units = "cm",
+    res = 600)
+
+ggplot(zoop_FA_long) +
+  geom_col(aes(x = reorder(ID, date),
+               y = value,
+               fill = FA,
+               colour = timepoint),
+           size = 0.75) +
+  scale_fill_viridis_d(option = "turbo",
+                       name = "") +
+  scale_colour_viridis_d(name = "Time Point",
+                         option = "plasma") +
+  labs(x = "Sample",
+       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+  scale_y_continuous(expand = c(0,0)) +
+  facet_wrap(~ MPconcentration,
+             scales = "free_x") +
+  theme1 +
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 1))
 
 dev.off()
 
