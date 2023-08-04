@@ -4,10 +4,8 @@ library(ggplot2)
 library(glmmTMB)
 library(DHARMa)
 library(dplyr)
-library(MuMIn)
 library(vegan)
 library(tidyr)
-library(easyCODA)
 library(ggrepel)
 library(ggeffects)
 library(cowplot)
@@ -275,7 +273,7 @@ plot(simulateResiduals(ARA.prop.mod1))
 
 summary(ARA.prop.mod1)  # no effect of MP concentration
 
-### PCA ----
+### Multivariate ----
 
 #### Pull out FA data and covariates ----
 
@@ -295,104 +293,12 @@ perch_FA_prop_totals <- perch_FA_prop2[,c(17,26,35,45)]
 
 summary(perch_FA_prop_totals)
 
-# Convert to CLRs
-
-trimmed_perch_FA_clr <- decostand(trimmed_perch_FA,
-                                  method = "clr",
-                                  MARGIN = 1)
-
-#### Run PCA ----
-perch_FA_prop_pca <- rda(trimmed_perch_FA_clr,
-                         scale. = FALSE)
-
-# Bar plot of relative eigenvalues
-barplot(as.vector(perch_FA_prop_pca$CA$eig)/sum(perch_FA_prop_pca$CA$eig))
-
-# Calculate percentage of variance explained by first 2 aaxes
-sum((as.vector(perch_FA_prop_pca$CA$eig)/sum(perch_FA_prop_pca$CA$eig))[1:2])
-
-summary(perch_FA_prop_pca)
-
-# 'Site' scores
-perch_FA_prop_PCA_site <- perch_FA_prop_pca$CA$u
-
-# 'Species' scores
-perch_FA_prop_PCA_species <- data.frame(perch_FA_prop_pca$CA$v)
-
 trimmed.FA.names <- 
   c("14:0", "16:0", "18:0", "16:1n-7", "18:1n-7", "18:1n-9", "18:2n-6", 
     "20:4n-6", "22:5n-6", "18:3n-3", "18:4n-3", "20:5n-3", 
     "22:5n-3", "22:6n-3")
 
-perch_FA_prop_PCA_species$FA <- trimmed.FA.names
-
-perch_FA_prop_PCA_site <- cbind(perch_FA_prop_covariates,
-                                perch_FA_prop_PCA_site[, 1:2])
-
-#### Plot ----
-
-png("Perch FA Proportions PCA.png",
-    width = 19,
-    height= 12, 
-    units = "cm",
-    res = 500)
-
-ggplot() +
-  geom_hline(aes(yintercept = 0),
-             linetype = "dashed",
-             linewidth = 0.25) +
-  geom_vline(aes(xintercept = 0),
-             linetype = "dashed",
-             linewidth = 0.25) +
-  geom_point(data = perch_FA_prop_PCA_site,
-             aes(x = PC1,
-                 y = PC2,
-                 fill = as.factor(MPconcentration)),
-             size = 2,
-             alpha = 0.75,
-             shape = 21) +
-  geom_text(data = perch_FA_prop_PCA_species,
-            aes(x = PC1, 
-                y = PC2, 
-                label = FA),
-            alpha = 0.95,
-            size = 7 / .pt,
-            colour = "black") +
-  scale_fill_viridis_d(name =
-                         expression(paste("Exposure Concentration (MPs" ~
-                                            L ^ -1 * ")")),
-                       option = "inferno") +
-  labs(x = "PC1", 
-       y = "PC2") +
-  theme1 +
-  theme(legend.key.size = unit(0.2, "cm"),
-        legend.spacing = unit(0, "cm"))
-
-dev.off()
-
-### RDA ----
-
-perch_FA_prop_rda <- 
-  rda(trimmed_perch_FA_clr ~ log(MPconcentration + 1) + body.weight,
-      scale. = FALSE,
-      data = perch_FA_prop_covariates)
-
-summary(perch_FA_prop_rda)
-
-anova(perch_FA_prop_rda, by = "term")
-anova(perch_FA_prop_rda, by = "margin")
-anova(perch_FA_prop_rda, by = "onedf")
-
-### CCA ----
-
-# Add diet data
- 
-perch_FA_prop_covariates <- 
-  left_join(perch_FA_prop_covariates, 
-            diet_summary, 
-            by = "corral")
-
-perch_FA_prop_covariates$corral <- as.factor(perch_FA_prop_covariates$corral)
+#### CCA ----
 
 perch_FA_prop_cca <- 
   cca((trimmed_perch_FA) ~ 
@@ -1108,7 +1014,7 @@ ggplot(zoop.end.long) +
 
 dev.off()
 
-### PCA ----
+### Multivariate ----
 
 #### Pull out covariates ----
 
@@ -1127,112 +1033,15 @@ zoop_FA_prop_totals <- zoop_FA_prop[,c(17,26,35,45)]
 
 summary(zoop_FA_prop_totals)
 
-# Convert to CLRs
-
-trimmed_zoop_FA_clr <- decostand(trimmed_zoop_FA,
-                                 method = "clr",
-                                 MARGIN = 1)
-
-
-
-#### Run PCA ----
-zoop_FA_prop_pca <- rda(trimmed_zoop_FA_clr,
-                        scale. = FALSE)
-
-# Bar plot of relative eigenvalues
-barplot(as.vector(zoop_FA_prop_pca$CA$eig)/sum(zoop_FA_prop_pca$CA$eig))
-
-# Calculate percentage of variance explained by first 2 aaxes
-sum((as.vector(zoop_FA_prop_pca$CA$eig)/sum(zoop_FA_prop_pca$CA$eig))[1:2])
-
-summary(zoop_FA_prop_pca)
-
-# 'Site' scores
-zoop_FA_prop_PCA_site <- zoop_FA_prop_pca$CA$u
-
-# 'Species' scores
-zoop_FA_prop_PCA_species <- data.frame(zoop_FA_prop_pca$CA$v)
-
 trimmed.FA.names.zoops <- 
   c("14:0", "16:0", "18:0", "16:1n-7", "18:1n-7", "18:1n-9", "22:1n-9",
     "18:2n-6", "18:3n-6", "20:4n-6", "22:5n-6", "18:3n-3", 
     "18:4n-3", "20:5n-3", "22:6n-3")
 
-zoop_FA_prop_PCA_species$FA <- trimmed.FA.names.zoops
-
-zoop_FA_prop_PCA_site <- cbind(zoop_FA_prop_covariates,
-                               zoop_FA_prop_PCA_site[, 1:2])
-
-#### Plot ----
-
-png("Zooplankton FA Proportions PCA.png",
-    width = 19,
-    height= 12, 
-    units = "cm",
-    res = 500)
-
-ggplot() +
-  geom_hline(aes(yintercept = 0),
-             linetype = "dashed",
-             linewidth = 0.25) +
-  geom_vline(aes(xintercept = 0),
-             linetype = "dashed",
-             linewidth = 0.25) +
-  geom_point(data = zoop_FA_prop_PCA_site,
-             aes(x = PC1,
-                 y = PC2,
-                 fill = as.factor(MPconcentration),
-                 shape = as.factor(date)),
-             size = 2,
-             alpha = 0.75) +
-  geom_text(data = zoop_FA_prop_PCA_species,
-            aes(x = PC1, 
-                y = PC2, 
-                label = FA),
-            alpha = 0.95,
-            size = 7 / .pt,
-            colour = "black") +
-  scale_fill_viridis_d(name =
-                         expression(paste("Exposure Concentration (MPs" ~
-                                            L ^ -1 * ")")),
-                       option = "inferno") +
-  scale_shape_manual(name = "Date",
-                     values = c(21:23)) +
-  labs(x = "PC1",
-       y = "PC2") +
-  theme1 +
-  theme(legend.key.size = unit(0.2, "cm"),
-        legend.spacing = unit(0, "cm"))
-
-dev.off()
-
-### RDA ----
-
-zoop_FA_prop_rda <- 
-  rda(trimmed_zoop_FA_clr ~ as.factor(MPconcentration) + as.factor(date),
-      scale. = FALSE,
-      data = zoop_FA_prop_covariates)
-
-summary(zoop_FA_prop_rda)
-
-zoop_FA_prop_rda2 <- 
-  rda(trimmed_zoop_FA_clr ~ as.factor(MPconcentration),
-      scale. = FALSE,
-      data = zoop_FA_prop_covariates)
-
-zoop_FA_prop_rda3 <- 
-  rda(trimmed_zoop_FA_clr ~ as.factor(date),
-      scale. = FALSE,
-      data = zoop_FA_prop_covariates)
-
-anova(zoop_FA_prop_rda, by = "term")
-anova(zoop_FA_prop_rda, by = "margin")
-anova(zoop_FA_prop_rda, by = "onedf")
-
-### CCA ----
+#### CCA ----
 
 zoop_FA_prop_cca <- 
-  cca(trimmed_zoop_FA ~ corral + as.factor(date) + YP.end,
+  cca(trimmed_zoop_FA ~ corral + as.factor(date),
       scale. = FALSE,
       data = zoop_FA_prop_covariates)
 

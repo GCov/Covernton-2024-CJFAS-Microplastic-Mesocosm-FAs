@@ -4,7 +4,6 @@ library(ggplot2)
 library(glmmTMB)
 library(DHARMa)
 library(dplyr)
-library(MuMIn)
 library(tidyr)
 library(vegan)
 library(emmeans)
@@ -140,7 +139,7 @@ nrow(perch_FA2sex)  # 18 fish remaining
 
 plot(total_FAs ~ TL, data = perch_FA2)
 
-perchFAmod1 <- glmmTMB(log(total_FAs) ~ 
+perchFAmod1 <- glmmTMB(total_FAs ~ 
                          body.weight +
                          log(MPconcentration + 6) +
                          (1 | corral),
@@ -793,6 +792,13 @@ zoop_FA$date2 <-
 
 zoop_FA$date2 <- as.factor(zoop_FA$date)
 
+
+# Separate mid and endpoints 
+
+zoop_FA_exp <-
+  zoop_FA %>% 
+  filter(date != "2021-05-27")
+
 ## Total FAs----
 
 zoopFAmod1 <- glmmTMB(total_FAs ~
@@ -845,12 +851,6 @@ dev.off()
 
 
 ## Individual FAs ----
-
-# Look at only mid and endpoints 
-
-zoop_FA_exp <-
-  zoop_FA %>% 
-  filter(date != "2021-05-27")
 
 ### LA ----
 
