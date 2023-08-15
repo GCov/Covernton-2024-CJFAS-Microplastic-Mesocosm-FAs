@@ -186,10 +186,12 @@ abline(0,0)
 names(perch2021)
 
 fish2021.mod2 <-
-  glmmTMB(body.weight ~ log(MPconcentration + 6) + YP.end,
+  lm(body.weight ~ log(MPconcentration + 6) + YP.end,
       data = perch2021)
 
 plot(simulateResiduals(fish2021.mod2))
+
+anova(fish2021.mod2)
 
 summary(fish2021.mod2)
 
@@ -244,7 +246,7 @@ ggplot(perch2021) +
   scale_colour_viridis_c(option = "plasma",
                          name = "Surviving Yellow Perch") +
   labs(x = expression(paste("Microplastic exposure concentration (particles"~L^-1*")")),
-       y = "Body Weight (g)") +
+       y = "Final Body Weight (g)") +
   theme1 +
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(nrow = 2),
