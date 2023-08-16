@@ -281,7 +281,7 @@ ggplot(perch_FA3) +
   scale_colour_viridis_d(option = "plasma",
                          name = "Total Length (cm)") +
   labs(x = "Body Weight (g)",
-       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+       y = expression(paste("EPA Concentration (mg "~g^-1*")"))) +
   theme1
 
 dev.off()
@@ -326,7 +326,7 @@ ggplot(perch_FA3) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0,1,10,100,1000,10000)) +
   labs(x = expression(paste("MP exposure concentration (particles"~L^-1*")")),
-       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+       y = expression(paste("DHA Concentration (mg "~g^-1*")"))) +
   theme1
 
 dev.off()
@@ -388,7 +388,7 @@ ALAplot <-
     scale_fill_viridis_d(option = "plasma",
                          "Body Weight (g)") +
     labs(x = "Gonad Weight (g)",
-         y = expression(paste("Concentration (mg "~g^-1*")"))) +
+         y = expression(paste("ALA Concentration (mg "~g^-1*")"))) +
     theme1
 
 #### LIN ----
@@ -429,18 +429,18 @@ LINplot <-
     scale_fill_viridis_d(option = "plasma",
                          "Total Length (cm)") +
     labs(x = "Gonad Weight (g)",
-         y = expression(paste("Concentration (mg "~g^-1*")"))) +
+         y = expression(paste("LA Concentration (mg "~g^-1*")"))) +
     theme1
 
 #### ALA and LIN plot ----
 
 png("Perch ALA and LIN Plot.png",
-    width = 8.84,
-    height= 10, 
+    width = 18,
+    height= 6, 
     units = "cm",
     res = 500)
 
-plot_grid(ALAplot, LINplot, ncol = 1,
+plot_grid(ALAplot, LINplot, ncol = 2,
           align = "v",
           axis = "r",
           labels = c("A", "B"))
@@ -486,7 +486,7 @@ ggplot(perch_FA2sex) +
                  y = C_22.6n.3),
              size = 1) +
   labs(x = "Body Weight (g)",
-       y = expression(paste("Concentration (mg "~g^-1*")"))) +
+       y = expression(paste("DHA Concentration (mg "~g^-1*")"))) +
   theme1
 
 dev.off()
