@@ -201,30 +201,6 @@ ggplot(perch_FAlong) +
   facet_wrap(~FAs) +
   theme1
 
-`# CCA1
-ggplot(perch_FAlong) +
-  geom_smooth(aes(x = CCA1,
-                  y = value,
-                  colour = FAs),
-              method = "lm") +
-  geom_point(aes(x = CCA1,
-                 y = value,
-                 colour = FAs)) +
-  facet_wrap(~FAs) +
-  theme1
-
-# CCA2
-ggplot(perch_FAlong) +
-  geom_smooth(aes(x = CCA2,
-                  y = value,
-                  colour = FAs),
-              method = "lm") +
-  geom_point(aes(x = CCA2,
-                 y = value,
-                 colour = FAs)) +
-  facet_wrap(~FAs) +
-  theme1
-
 # Sample date
 ggplot(perch_FAlong) +
   geom_smooth(aes(x = date,
@@ -238,6 +214,24 @@ ggplot(perch_FAlong) +
   theme1
 
 ## Individual FAs -----
+
+### HUFAs and SFAs
+
+perch_FA4 <-
+  perch_FA3 %>% 
+  mutate(MUFA.SFA = total_MUFAs + total_SFAs)
+
+plot(MUFA.SFA ~ log(MPconcentration + 6), data = perch_FA4)
+
+MUFA.SFAmod <- glmmTMB(MUFA.SFA ~
+                         log(MPconcentration + 6) + 
+                         body.weight +
+                         (1 | corral),
+                       data = perch_FA4)
+
+plot(simulateResiduals(MUFA.SFAmod))
+
+summary(MUFA.SFAmod)
 
 ### Treatment effect on HUFAs ----
 
