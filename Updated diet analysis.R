@@ -575,17 +575,10 @@ biplot.pcoa(dietpcoa, Y2)
 set.seed(425)
 
 diet_PERMANOVA <- 
-  adonis2(Y2 ~ corral + body.weight,
+  adonis2(Y2 ~ log(MPconcentration + 6) + body.weight,
+          strata = X2$corral,
           method = "bray",
           by = "margin",
-          data = X2)
-
-diet_PERMANOVA
-
-diet_PERMANOVA <- 
-  adonis2(Y2 ~ corral + body.weight,
-          method = "bray",
-          by = "onedf",
           data = X2)
 
 diet_PERMANOVA

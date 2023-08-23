@@ -210,7 +210,7 @@ dev.off()
 DHA.prop.mod1 <- 
   glmmTMB(C_22.6n.3 ~  
             body.weight +
-            log(MPconcentration + 1) +
+            log(MPconcentration + 6) +
             (1 | corral), 
           data = perch_FA_prop2)
 
@@ -223,11 +223,11 @@ summary(DHA.prop.mod1)  # no effect of MP concentration
 EPA.prop.mod1 <- 
   glmmTMB(C_20.5n.3 ~  
             body.weight +
-            log(MPconcentration + 1) +
+            log(MPconcentration + 6) +
             (1 | corral), 
           data = perch_FA_prop2)
 
-  plot(simulateResiduals(EPA.prop.mod1))
+plot(simulateResiduals(EPA.prop.mod1))
 
 summary(EPA.prop.mod1)  # positive correlation with body size
 
@@ -266,7 +266,7 @@ dev.off()
 ARA.prop.mod1 <- 
   glmmTMB(C_20.4n.6 ~  
             body.weight +
-            log(MPconcentration + 1) +
+            log(MPconcentration + 6) +
             (1 | corral), 
           data = perch_FA_prop2)
 
@@ -300,21 +300,19 @@ trimmed.FA.names <-
     "22:5n-3", "22:6n-3")
 
 #### CCA ----
+set.seed(424)
 
 perch_FA_prop_cca <- 
   cca((trimmed_perch_FA) ~ 
         log(MPconcentration + 6) + 
         body.weight,
-      data = perch_FA_prop_covariates,
-      scale = FALSE)
+      data = perch_FA_prop_covariates)
 
 summary(perch_FA_prop_cca)
 
 RsquareAdj(perch_FA_prop_cca)
 
 screeplot(perch_FA_prop_cca)
-
-set.seed(424)
 
 anova(perch_FA_prop_cca, by = "term")
 anova(perch_FA_prop_cca, by = "margin")
@@ -498,6 +496,8 @@ perch_FA_prop_covariates2 <-
 
 perch_FA_prop_covariates2$corral <-
   as.factor(perch_FA_prop_covariates2$corral)
+
+set.seed(4554)
 
 perch_FA_prop_cca2 <- 
   cca(trimmed_perch_FA3 ~
@@ -945,8 +945,12 @@ trimmed.FA.names.zoops <-
 
 #### CCA ----
 
+
+
+set.seed(4399)
+
 zoop_FA_prop_cca <- 
-  cca(trimmed_zoop_FA ~ corral + as.factor(date),
+  cca(trimmed_zoop_FA ~ log(MPconcentration + 6) + as.factor(date),
       scale. = FALSE,
       data = zoop_FA_prop_covariates)
 
@@ -957,8 +961,6 @@ plot(zoop_FA_prop_cca, scaling = 2, display = c("sp", "cn"))
 screeplot(zoop_FA_prop_cca)
 
 summary(zoop_FA_prop_cca)
-
-set.seed(4399)
 
 anova(zoop_FA_prop_cca, by = "term")
 anova(zoop_FA_prop_cca, by = "margin")
@@ -1031,16 +1033,7 @@ zoop_FA_prop_cca_cn1 <-
                     scaling = 1))
 
 zoop_FA_prop_cca_cn1$label <-
-  factor(c("24",
-           "0(1)",
-           "414",
-           "29, 240",
-           "100",
-           "6",
-           "7,071",
-           "0(2)",
-           "1,710",
-           "Start",
+  factor(c("Start",
            "Mid-point",
            "End"))
 
@@ -1144,16 +1137,7 @@ zoop_FA_prop_cca_cn1 <-
                     scaling = 1))
 
 zoop_FA_prop_cca_cn1$label <-
-  factor(c("24",
-           "0(1)",
-           "414",
-           "29,240",
-           "100",
-           "6",
-           "7,071",
-           "0(2)",
-           "1,710",
-           "Start",
+  factor(c("Start",
            "Mid-point", 
            "End"))
 
@@ -1163,16 +1147,7 @@ zoop_FA_prop_cca_cn2 <-
                     scaling = 2))
 
 zoop_FA_prop_cca_cn2$label <-
-  factor(c("24",
-           "0(1)",
-           "414",
-           "29,240",
-           "100",
-           "6",
-           "7,071",
-           "0(2)",
-           "1,710",
-           "Start",
+  factor(c("Start",
            "Mid-point",
            "End"))
 
@@ -1195,7 +1170,8 @@ ggplot() +
                       label = FA),
                   size = 8 / .pt,
                   colour = "blue3",
-                  box.padding = 0) +
+                  box.padding = 0,
+                  max.overlaps = 20) +
   geom_text_repel(data = zoop_FA_prop_cca_cn2,
                   aes(x = CCA1,
                       y = CCA2,
@@ -1203,13 +1179,14 @@ ggplot() +
                   size = 10 / .pt,
                   colour =  "purple3",
                   box.padding = unit(0, "cm")) +
+  scale_y_continuous(limits = c(-1.5, 1.1)) +
+  scale_x_continuous(limits = c(-1.1, 1.5)) +
   scale_shape_manual(values = c(21,24,22),
                      name = "Experimental Time Point") +
   scale_fill_viridis_d(name =
                          expression(paste("Exposure Concentration (MPs" ~
                                             L ^ -1 * ")")),
                        option = "plasma") +
-  scale_y_continuous(limits = c(-1.25, 1)) +
   labs(x = "CCA1", 
        y = "CCA2") +
   guides(fill=guide_legend(override.aes=list(shape=21))) +
