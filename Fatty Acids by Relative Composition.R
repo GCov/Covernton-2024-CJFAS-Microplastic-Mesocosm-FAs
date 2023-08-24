@@ -921,20 +921,67 @@ dev.off()
 
 ### Multivariate ----
 
+#### Add zooplankton biomass data ----
+
+zoopbm <- read.csv("zoop_biomass_2021.csv", 
+                   header = TRUE,
+                   stringsAsFactors = TRUE)
+
+str(zoopbm)
+
+# Match the time points
+
+unique(zoop_FA_prop$date)
+
+zoop_FA_prop <-
+  zoop_FA_prop %>% 
+  mutate(timepoint = as.factor(as.character(date)))
+
+levels(zoop_FA_prop$timepoint) <- c("Beginning",
+                                    "Mid-point",
+                                    "End")
+
+unique(zoopbm$date_sampled)
+
+zoopbm2 <-
+  zoopbm %>% 
+  filter(date_sampled == "2021-06-01" |
+           date_sampled == "2021-07-05"|
+           date_sampled == "2021-08-09") %>% 
+  rename(timepoint = date_sampled)
+
+zoopbm2$timepoint <- as.character(zoopbm2$timepoint)
+zoopbm2$timepoint <- as.factor(zoopbm2$timepoint)
+
+levels(zoopbm2$timepoint) <- c("Beginning", "Mid-point", "End")
+
+zoopbm2 <- zoopbm2[,-1]
+
+zoopbm2 <- 
+  zoopbm2 %>% 
+  pivot_wider(names_from = "order",
+              values_from = "biomass_ug_l")
+
+zoop_FA_prop2 <- 
+  left_join(zoop_FA_prop,
+            zoopbm2, 
+            by = c("corral",
+                   "timepoint"))
+
 #### Pull out covariates ----
 
 # Remove any FAs that contribute less than 1% and re-scale response so it 
 # sums to 1
 
 trimmed_zoop_FA <- 
-  data.frame(zoop_FA_prop[,c(7:16,18:25,27:34,36:44)]) %>% 
+  data.frame(zoop_FA_prop2[,c(7:16,18:25,27:34,36:44)]) %>% 
   select(where(function(x){mean(x) >= 0.01}))
 
 # trimmed_zoop_FA <- trimmed_zoop_FA/rowSums(trimmed_zoop_FA)
 
-zoop_FA_prop_covariates <- zoop_FA_prop[,c(1:3,51:54),]
+zoop_FA_prop_covariates <- zoop_FA_prop2[,c(1:3,51:59),]
 
-zoop_FA_prop_totals <- zoop_FA_prop[,c(17,26,35,45)]
+zoop_FA_prop_totals <- zoop_FA_prop2[,c(17,26,35,45)]
 
 summary(zoop_FA_prop_totals)
 
@@ -945,14 +992,19 @@ trimmed.FA.names.zoops <-
 
 #### CCA ----
 
-
-
 set.seed(4399)
 
 zoop_FA_prop_cca <- 
-  cca(trimmed_zoop_FA ~ log(MPconcentration + 6) + as.factor(date),
+  cca(trimmed_zoop_FA ~ 
+        log(MPconcentration + 6) + 
+        as.factor(date) +
+        Calanoida +
+        Cladocera +
+        Cyclopoida,
       scale. = FALSE,
       data = zoop_FA_prop_covariates)
+
+RsquareAdj(zoop_FA_prop_cca)
 
 plot(zoop_FA_prop_cca, scaling = 1, display = c("lc", "cn"))
 
@@ -1037,6 +1089,15 @@ zoop_FA_prop_cca_cn1$label <-
            "Mid-point",
            "End"))
 
+zoop_FA_prop_cca_bp1 <-
+  data.frame(scores(zoop_FA_prop_cca,
+                    display = "bp",
+                    scaling = 1))[c(4:6),]
+
+zoop_FA_prop_cca_bp1$label = c("Calanoida",
+                               "Cladocera",
+                               "Cyclopoida")
+
 ##### Plot ----
 
 zoopFAplot1 <-
@@ -1062,6 +1123,24 @@ ggplot() +
              size = 3,
              alpha = 0.75,
              colour = "grey30") +
+  geom_text(data = zoop_FA_prop_cca_bp1,
+            aes(x =  CCA1*1.4,
+                y = CCA2 * 1.4,
+                label = label),
+            size = 8 / .pt,
+            colour =  "grey10") +
+  geom_segment(data = zoop_FA_prop_cca_bp1,
+               aes(x = 0,
+                   y = 0,
+                   xend = CCA1,
+                   yend = CCA2,
+                   colour = vars),
+               alpha = 0.5,
+               linewidth = 0.75,
+               arrow = arrow(angle = 20,
+                             length = unit(0.25, "cm"),
+                             type = "open"),
+               colour = "grey10") +
   geom_text_repel(data = zoop_FA_prop_cca_cn1,
                   aes(x = CCA1,
                       y = CCA2,
@@ -1151,7 +1230,14 @@ zoop_FA_prop_cca_cn2$label <-
            "Mid-point",
            "End"))
 
+zoop_FA_prop_cca_bp2 <-
+  data.frame(scores(zoop_FA_prop_cca,
+                    display = "bp",
+                    scaling = 2))[c(4:6),]
 
+zoop_FA_prop_cca_bp2$label = c("Calanoida",
+                               "Cladocera",
+                               "Cyclopoida")
 
 ##### Plot ----
 
@@ -1172,6 +1258,24 @@ ggplot() +
                   colour = "blue3",
                   box.padding = 0,
                   max.overlaps = 20) +
+  geom_text(data = zoop_FA_prop_cca_bp2,
+            aes(x =  CCA1*1.4,
+                y = CCA2 * 1.4,
+                label = label),
+            size = 8 / .pt,
+            colour =  "grey10") +
+  geom_segment(data = zoop_FA_prop_cca_bp2,
+               aes(x = 0,
+                   y = 0,
+                   xend = CCA1,
+                   yend = CCA2,
+                   colour = vars),
+               alpha = 0.5,
+               linewidth = 0.75,
+               arrow = arrow(angle = 20,
+                             length = unit(0.25, "cm"),
+                             type = "open"),
+               colour = "grey10") +
   geom_text_repel(data = zoop_FA_prop_cca_cn2,
                   aes(x = CCA1,
                       y = CCA2,
@@ -1179,8 +1283,8 @@ ggplot() +
                   size = 10 / .pt,
                   colour =  "purple3",
                   box.padding = unit(0, "cm")) +
-  scale_y_continuous(limits = c(-1.5, 1.1)) +
-  scale_x_continuous(limits = c(-1.1, 1.5)) +
+  scale_y_continuous(limits = c(-1.4, 1.1)) +
+  scale_x_continuous(limits = c(-1.5, 1.1)) +
   scale_shape_manual(values = c(21,24,22),
                      name = "Experimental Time Point") +
   scale_fill_viridis_d(name =
@@ -1193,6 +1297,8 @@ ggplot() +
   theme1 +
   theme(legend.key.size = unit(0.4, "cm"),
         legend.spacing = unit(0, "cm"))
+
+#### Combine plot ----
 
 png("Zooplankton FA Proportions CCA.png",
     width = 18,
