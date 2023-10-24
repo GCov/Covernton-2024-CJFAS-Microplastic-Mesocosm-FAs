@@ -1063,9 +1063,9 @@ zoop_FA_prop_cca_site1$label <-
 zoop_FA_prop_cca_site1$point <- 
   as.factor(as.character(zoop_FA_prop_cca_site1$date))
 
-levels(zoop_FA_prop_cca_site1$point) <- c("Start",
-                                         "Mid-point",
-                                         "End")
+levels(zoop_FA_prop_cca_site1$point) <- c("Day -6",
+                                         "Day 34",
+                                         "Day 68")
 # Generate hulls
 zoop_FA_date_hulls <- data.frame()
 
@@ -1085,9 +1085,9 @@ zoop_FA_prop_cca_cn1 <-
                     scaling = 1))
 
 zoop_FA_prop_cca_cn1$label <-
-  factor(c("Start",
-           "Mid-point",
-           "End"))
+  factor(c("Day -6",
+           "Day 34",
+           "Day 68"))
 
 zoop_FA_prop_cca_bp1 <-
   data.frame(scores(zoop_FA_prop_cca,
@@ -1149,11 +1149,12 @@ ggplot() +
                   colour =  "blue3",
                   box.padding = unit(0, "cm")) +
   scale_shape_manual(values = c(21,24,22),
-                     name = "Experimental Time Point") +
+                     name = "Time Point") +
   scale_fill_viridis_d(name =
                          expression(paste("Exposure Concentration (MPs" ~
                                             L ^ -1 * ")")),
-                       option = "inferno") +
+                       option = "inferno",
+                       direction = -1) +
   labs(x = "CCA1", 
        y = "CCA2") +
   guides(fill=guide_legend(override.aes=list(shape=21))) +
@@ -1206,9 +1207,9 @@ zoop_FA_prop_cca_site2$label <-
 zoop_FA_prop_cca_site2$point <- 
   as.factor(as.character(zoop_FA_prop_cca_site2$date))
 
-levels(zoop_FA_prop_cca_site2$point) <- c("Start",
-                                          "Mid-point",
-                                          "End")
+levels(zoop_FA_prop_cca_site2$point) <- c("Day -6",
+                                          "Day 34",
+                                          "Day 68")
 
 zoop_FA_prop_cca_cn1 <-
   data.frame(scores(zoop_FA_prop_cca,
@@ -1216,9 +1217,9 @@ zoop_FA_prop_cca_cn1 <-
                     scaling = 1))
 
 zoop_FA_prop_cca_cn1$label <-
-  factor(c("Start",
-           "Mid-point", 
-           "End"))
+  factor(c("Day -6",
+           "Day 34",
+           "Day 68"))
 
 zoop_FA_prop_cca_cn2 <-
   data.frame(scores(zoop_FA_prop_cca,
@@ -1226,9 +1227,9 @@ zoop_FA_prop_cca_cn2 <-
                     scaling = 2))
 
 zoop_FA_prop_cca_cn2$label <-
-  factor(c("Start",
-           "Mid-point",
-           "End"))
+  factor(c("Day -6",
+           "Day 34",
+           "Day 68"))
 
 zoop_FA_prop_cca_bp2 <-
   data.frame(scores(zoop_FA_prop_cca,
@@ -1240,7 +1241,6 @@ zoop_FA_prop_cca_bp2$label = c("Calanoida",
                                "Cyclopoida")
 
 ##### Plot ----
-
 
 zoopFAplot2 <-
 ggplot() +
@@ -1286,7 +1286,7 @@ ggplot() +
   scale_y_continuous(limits = c(-1.4, 1.1)) +
   scale_x_continuous(limits = c(-1.5, 1.1)) +
   scale_shape_manual(values = c(21,24,22),
-                     name = "Experimental Time Point") +
+                     name = "Time Point") +
   scale_fill_viridis_d(name =
                          expression(paste("Exposure Concentration (MPs" ~
                                             L ^ -1 * ")")),

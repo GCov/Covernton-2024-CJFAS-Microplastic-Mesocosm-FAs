@@ -550,9 +550,11 @@ ggplot() +
             size = 7 / .pt,
             colour =  "blue3") +
   scale_fill_viridis_d(name = "Corral",
-                       option = "inferno") +
+                       option = "inferno",
+                       direction = -1) +
   scale_colour_viridis_d(name = "Corral",
-                         option = "inferno") +
+                         option = "inferno",
+                         direction = -1) +
   scale_x_continuous(limits = c(-2, 2)) +
   scale_y_continuous(limits = c(-2, 1)) +
   theme1 +

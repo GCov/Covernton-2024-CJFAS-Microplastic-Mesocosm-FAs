@@ -120,7 +120,8 @@ ggplot(perch2021) +
   labs(x = expression(paste("MP Exposure Concentration (particles"~L^-1*")")),
        y = "Body Weight (g)") +
   scale_fill_viridis_d(option = "plasma",
-                       name = "Treatment") +
+                       name = "Treatment",
+                       direction = -1) +
   scale_x_continuous(trans = "log1p",
                      breaks = sort(unique(perch2021$MPconcentration))) +
   theme1 +
