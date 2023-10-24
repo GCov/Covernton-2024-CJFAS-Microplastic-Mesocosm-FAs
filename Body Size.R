@@ -206,10 +206,8 @@ plotResiduals(fish2021.mod2, perch2021$YP.end)
 
 perch.body.predict <-
   as.data.frame(ggemmeans(fish2021.mod2,
-                          c("MPconcentration [0.001:29240,by = 1000]", 
-                            "YP.end"))) %>% 
-  rename(MPconcentration = x,
-         YP.end = group)
+                          c("YP.end")),
+                terms_to_colnames = TRUE)
 
 ggemmeans(fish2021.mod2,
           c("YP.end"))
@@ -217,40 +215,83 @@ ggemmeans(fish2021.mod2,
 perch.body.predict$YP.end <- as.character(perch.body.predict$YP.end)
 perch.body.predict$YP.end <- as.numeric(perch.body.predict$YP.end)
 
+set.seed(5465)
+
 png("2021 Perch Weights 2.png",
     width = 8.84,
-    height= 8, 
+    height= 9.5, 
     units = "cm",
     res = 600)
 
 ggplot(perch2021) +
-  geom_ribbon(data = perch.body.predict,
-              aes(x = MPconcentration,
-                  ymin = conf.low,
-                  ymax = conf.high,
-                  fill = YP.end,
-                  group = as.factor(YP.end)),
-              alpha = 0.4) +
+  geom_ribbon(
+    data = perch.body.predict,
+    aes(
+      x = YP.end,
+      ymin = conf.low,
+      ymax = conf.high
+    ),
+    alpha = 0.4
+  ) +
   geom_line(data = perch.body.predict,
-            aes(x = MPconcentration,
-                y = predicted,
-                colour = YP.end,
-                group = as.factor(YP.end))) +
-  geom_point(aes(x = MPconcentration,
-                 y = body.weight,
-                 fill = YP.end),
-             shape = 21) +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 6, 100, 414, 1710, 7071, 29240)) +
-  scale_fill_viridis_c(option = "plasma",
-                       name = "Surviving Yellow Perch") +
-  scale_colour_viridis_c(option = "plasma",
-                         name = "Surviving Yellow Perch") +
-  labs(x = expression(paste("Microplastic exposure concentration (particles"~L^-1*")")),
+            aes(x = YP.end,
+                y = predicted)) +
+  geom_jitter(aes(
+    x = YP.end,
+    y = body.weight,
+    fill = as.factor(MPconcentration)
+  ),
+  shape = 21,
+  alpha = 0.75,
+  height = 0,
+  width = 0.1) +
+  scale_y_continuous(limits = c(0, 14),
+                     expand = c(0, 0)) +
+  scale_fill_viridis_d(option = "inferno",
+                       name =
+                         expression(
+                           paste("Microplastic exposure concentration (particles" ~ L ^ -1 * ")")
+                         )) +
+  labs(x = "Number of Surviving Yellow Perch",
        y = "Final Body Weight (g)") +
   theme1 +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "bottom",
+        legend.direction = "vertical") +
   guides(colour = guide_legend(nrow = 2),
          fill = guide_legend(nrow = 2))
 
 dev.off()
+
+
+# Compare mortality with MP concentration ----
+
+fish_pop <- 
+  fish_pop %>% 
+  mutate(dead = YP.start - YP.end)
+
+mort.mod <-
+  glmmTMB(cbind(dead, YP.end) ~ log(MPconcentration + 6),
+          family = betabinomial(link = "logit"),
+          data = fish_pop)
+
+plot(simulateResiduals(mort.mod))
+
+summary(mort.mod)
+
+plot(body.weight ~ log(MPconcentration + 6), data = perch2021)
+lines(predict(fish2021.mod2, re.form = NA) ~ log(perch2021$MPconcentration + 6))
+
+plot(residuals(fish2021.mod2) ~ predict(fish2021.mod2))
+
+plotResiduals(fish2021.mod2, perch2021$date.collected)
+plotResiduals(fish2021.mod2, perch2021$YP.end)
+
+perch.body.predict <-
+  as.data.frame(ggemmeans(fish2021.mod2,
+                          c("MPconcentration [0.001:29240,by = 1000]", 
+                            "YP.end"))) %>% 
+  rename(MPconcentration = x,
+         YP.end = group)
+
+ggemmeans(fish2021.mod2,
+          c("YP.end"))
