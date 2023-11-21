@@ -248,6 +248,7 @@ ggplot(perch2021) +
   scale_y_continuous(limits = c(0, 14),
                      expand = c(0, 0)) +
   scale_fill_viridis_d(option = "inferno",
+                       direction = -1,
                        name =
                          expression(
                            paste("Microplastic exposure concentration (particles" ~ L ^ -1 * ")")
@@ -295,3 +296,4 @@ perch.body.predict <-
 
 ggemmeans(fish2021.mod2,
           c("YP.end"))
+
