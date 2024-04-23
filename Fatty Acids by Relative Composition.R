@@ -1050,15 +1050,6 @@ zoopFAplot1 <-
   geom_vline(aes(xintercept = 0),
              linetype = "dashed",
              linewidth = 0.25) +
-  geom_polygon(
-    data = zoop_FA_date_hulls,
-    aes(x = CCA1,
-        y = CCA2,
-        group = point),
-    alpha = 0.25,
-    linetype = "dashed",
-    linewidth = 0.5
-  ) +
   geom_point(
     data = zoop_FA_prop_cca_site1,
     aes(
@@ -1280,7 +1271,7 @@ zoopFAplot2 <-
 
 png(
   "Zooplankton FA Proportions CCA.png",
-  width = 18,
+  width = 18.2,
   height = 15,
   units = "cm",
   res = 600
