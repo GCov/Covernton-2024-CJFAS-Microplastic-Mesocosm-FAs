@@ -631,6 +631,72 @@ ggplot(zoop_FA_long) +
 
 dev.off()
 
+## Plot by Individual FA ----
+
+# Put data into long form
+
+str(zoop_FA)
+
+zoop_FA_long <-
+  zoop_FA %>% 
+  pivot_longer(cols = c(7:16, 18:25, 27:34, 36:44),
+               names_to = "FA") %>% 
+  group_by(FA) %>% 
+  filter(mean(value)/mean(total_FAs) > 0.01) %>% 
+  ungroup() %>% 
+  mutate(time = as.factor(as.character(date)))
+
+levels(zoop_FA_long$time) <- c("Day -6",
+                               "Day 34",
+                               "Day 68")
+
+zoop_FA_names <- 
+  c("14:0",
+    "16:0",
+    "16:1n-7",
+    "18:0",
+    "18:1n-7",
+    "18:1n-9",
+    "18:2n-6",
+    "18:3n-3",
+    "18:3n-6",
+    "18:4n-3",
+    "20:4n-6",
+    "20:5n-3",
+    "22:1n-9",
+    "22:5n-6",
+    "22:6n-3")
+  
+zoop_FA_long$FA <- as.factor(zoop_FA_long$FA)
+
+levels(zoop_FA_long$FA) <- zoop_FA_names
+
+png(
+  "Zoop Individual FAs.png",
+  width = 18,
+  height = 18,
+  units = "cm",
+  res = 300
+)
+
+ggplot(zoop_FA_long) +
+  geom_col(aes(x = corral,
+               y = value,
+               fill = FA)) +
+  facet_grid(time~MPconcentration, 
+             scales = "free_x", 
+             space = "free") +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_fill_viridis_d(option = "turbo",
+                       name = "Fatty Acid") +
+  labs(y = expression(paste("Concentration (mg " ~ g ^ -1 * ")")),
+       x = "") +
+  theme1 +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+
+dev.off()
+
 
 
 # Fish food ----

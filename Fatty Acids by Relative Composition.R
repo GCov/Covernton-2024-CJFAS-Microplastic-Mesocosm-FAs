@@ -94,88 +94,6 @@ perch_FA_prop2 <- left_join(perch_FA_prop2,
                             perch_pop,
                             by = c("corral", "MPconcentration"))
 
-## Prep zooplankton data ----
-
-# Sample comparison ----
-
-## Put data into long form ----
-
-FA_prop_long <-
-  FAs_prop[, c(1:3, 5, 6, 17, 20, 23, 26, 27, 31, 35, 36, 40, 42, 45:47, 51)] %>%
-  pivot_longer(names(FAs_prop[c(17, 20, 23, 26, 27, 31, 35, 36, 40, 42, 45:47)]),
-               names_to = "metric",
-               values_to = "value")
-
-FA_prop_long$metric <- as.factor(FA_prop_long$metric)
-
-levels(FA_prop_long$sample.type) <-
-  c("Mysis Fish Food",
-    "Yellow Perch",
-    "Zooplankton")
-
-# Focus on endpoint Zooplankton
-FA_prop_long <- subset(FA_prop_long,
-                       date >= "2021-08-01" |
-                         sample.type == "Mysis Fish Food")
-
-# Set MP concentration to 0 for fish food
-
-FA_prop_long$MPconcentration[FA_prop_long$sample.type ==
-                               "Mysis Fish Food"] <- 0
-
-# Define labeller
-
-prop_labels <- as_labeller(
-  c(
-    "C_16.1n.7" = "Palmitoleic acid",
-    "C_18.1n.9" = "Oleic acid",
-    "C_18.2n.6" = "Linoleic acid",
-    "C_18.3n.3" = "Alpha-linoleic acid",
-    "C_20.4n.6" = "Arachidonic acid",
-    "C_20.5n.3" = "Eicosapentaenoic acid",
-    "C_22.6n.3" = "Docosahexaenoic acid",
-    "HUFAs" = "Total HUFAs",
-    "PUFAs" = "Total PUFAs",
-    "total_MUFAs" = "Total MUFAs",
-    "total_N.3_PUFAs" = "Total n-3 PUFAs",
-    "total_N.6_PUFAs" = "Total n-6 PUFAs",
-    "total_SFAs" = "Total SFAs"
-  )
-)
-
-## Plot ----
-
-png(
-  "Sample Comparison FA Plot.png",
-  width = 19,
-  height = 19,
-  units = "cm",
-  res = 600
-)
-
-ggplot(FA_prop_long) +
-  geom_point(aes(x = MPconcentration,
-                 y = value,
-                 colour = sample.type)) +
-  geom_smooth(aes(x = MPconcentration,
-                  y = value,
-                  colour = sample.type),
-              method = "lm") +
-  facet_wrap( ~ metric,
-              scales = "free_y",
-              labeller = prop_labels,
-              ncol = 3) +
-  labs(x = "Sample Type",
-       y = "Proportion of Total Fatty Acids") +
-  scale_colour_manual(values = c("orange", "purple", "blue"),
-                      name = "") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  theme1
-
-dev.off()
-
-
 # Analyses ----
 
 ## Perch analyses ----
@@ -739,6 +657,36 @@ ggplot(reduced_perch_FA2_long) +
 
 # Hard to figure out what's going on here
 
+### Plot individual fatty acids ----
+
+levels(trimmed_perch_FA2_long$FA) <-
+  trimmed.FA.names
+
+png(
+  "Perch Relative FA.png",
+  width = 18,
+  height = 7.8,
+  units = "cm",
+  res = 300
+)
+
+ggplot(trimmed_perch_FA2_long) +
+  geom_col(aes(x = ID,
+               y = value,
+               fill = FA)) +
+  facet_grid(~MPconcentration, 
+             scales = "free_x", 
+             space = "free") +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_fill_viridis_d(option = "turbo",
+                       name = "Fatty Acid") +
+  labs(y = "Proportion",
+       x = "") +
+  theme1 +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+
+dev.off()
 
 ## Zooplankton analyses ----
 
