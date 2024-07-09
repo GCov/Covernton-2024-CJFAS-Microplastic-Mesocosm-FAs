@@ -761,16 +761,19 @@ zoop.end.long$timepoint <-
 png(
   "Zoop Compositional HUFA Plot.png",
   width = 8.84,
-  height = 6,
+  height = 8,
   units = "cm",
   res = 500
 )
 
 ggplot(zoop.end.long) +
-  geom_boxplot(aes(x = timepoint,
+  geom_point(aes(x = MPconcentration,
                    y = value,
                    fill = FA),
-               alpha = 0.6) +
+               alpha = 0.6,
+             shape = 21) +
+  facet_wrap(~timepoint,
+             nrow = 2) +
   scale_fill_viridis_d(
     name = "",
     labels = c("ARA",
@@ -778,8 +781,10 @@ ggplot(zoop.end.long) +
                "DHA"),
     option = "magma"
   ) +
-  labs(x = "Date",
-       y = "Proportion") +
+  scale_x_continuous(trans = 'log1p',
+                     breaks = c(0, 1, 10, 100, 1000, 10000)) +
+  labs(x = expression(paste("MP exposure concentration (particles" ~ 
+                              L ^ -1 * ")")), y = "Proportion") +
   theme1
 
 dev.off()
