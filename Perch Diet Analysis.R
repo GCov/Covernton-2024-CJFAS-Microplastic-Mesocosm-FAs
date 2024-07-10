@@ -31,6 +31,8 @@ theme1 <-
 
 ## Load data ----
 
+perch2021 <- read.csv("perch2021.csv", header = TRUE, stringsAsFactors = TRUE)[,-1]
+
 perch_diet <- read.csv("perch_diet.csv", header = TRUE)
 
 perch_diet$MPconcentration <- as.numeric(perch_diet$MPconcentration)
@@ -132,7 +134,7 @@ png(
   width = 18,
   height = 8,
   units = "cm",
-  res = 600
+  res = 300
 )
 
 ggplot(perch_diet_long) +
@@ -142,10 +144,9 @@ ggplot(perch_diet_long) +
     fill = reorder(taxa, 1 / (count + 1), mean)
   ),
   colour = "black",
-  size = 0.25) +
-  labs(x = expression(paste(
-    "MP exposure concentration (particles" ~ L ^ -1 * ")"
-  )),
+  linewidth = 0.25) +
+  labs(x = expression(paste("Exposure Concentration (MPs" ~
+                              L ^ -1 * ")")),
   y = "Number of Individuals (log scale)") +
   scale_fill_viridis_d(option = "turbo",
                        name = "Taxa") +
@@ -204,10 +205,10 @@ levels(perch_relabund_long$treatment) <-
 
 png(
   "Perch Diet Plot by Taxa Relative Abundance.png",
-  width = 12,
+  width = 18,
   height = 8,
   units = "cm",
-  res = 500
+  res = 300
 )
 
 ggplot(subset(perch_relabund_long, total.animals != 0)) +
@@ -217,7 +218,7 @@ ggplot(subset(perch_relabund_long, total.animals != 0)) +
     fill = reorder(taxa, 1 / (count + 1), mean)
   ),
   colour = "black",
-  size = 0.25) +
+  linewidth = 0.25) +
   scale_y_continuous(expand = c(0, 0)) +
   labs(x = expression(paste("Dose (MPs" ~ L ^ -1 * ")")),
        y = "Proportion of Individuals") +
@@ -236,146 +237,6 @@ ggplot(subset(perch_relabund_long, total.animals != 0)) +
     legend.position = "bottom",
     legend.key.size = unit(0.25, "cm")
   )
-
-dev.off()
-
-
-# GLMM for total individuals ----
-
-# Poisson
-mod1 <- glmmTMB(
-  total.animals ~
-    log(MPconcentration + 6) +
-    body.weight +
-    YP.end,
-  family = poisson(link = "log"),
-  data = perch_diet
-)
-summary(mod1)
-res1 <- simulateResiduals(mod1)
-plot(res1)  # BAD
-
-# NB with linear variance
-mod2 <- glmmTMB(
-  total.animals ~
-    log(MPconcentration + 6) +
-    body.weight +
-    YP.end,
-  family = nbinom1(link = "log"),
-  data = perch_diet
-)
-summary(mod2)
-res2 <- simulateResiduals(mod2)
-plot(res2)  # DECENT
-
-# NB with quadratic variance
-mod3 <- glmmTMB(
-  total.animals ~
-    log(MPconcentration + 6) +
-    body.weight +
-    YP.end,
-  family = nbinom2(link = "log"),
-  data = perch_diet
-)
-summary(mod3)
-res3 <- simulateResiduals(mod3)
-plot(res3)  # BEST
-
-## Plot model predictions ----
-
-ingestionpred <-
-  as.data.frame(ggemmeans(mod3,
-                          terms = "YP.end")) %>%
-  rename(YP.end = x)
-
-png(
-  "Perch Diet Totals.png",
-  width = 9,
-  height = 7,
-  units = "cm",
-  res = 600
-)
-
-ggplot() +
-  geom_ribbon(
-    data = ingestionpred,
-    aes(x = YP.end,
-        ymin = conf.low,
-        ymax = conf.high),
-    fill = "lime green",
-    alpha = 0.3
-  ) +
-  geom_line(data = ingestionpred,
-            aes(x = YP.end,
-                y = predicted),
-            size = 0.5) +
-  geom_point(data = perch_diet,
-             aes(x = YP.end,
-                 y = total.animals)) +
-  scale_y_continuous(expand = c(0.009, 0.005),
-                     breaks = c(0, 1, 10, 100, 1000)) +
-  coord_trans(y = "log1p") +
-  labs(x = "Number of Surviving Perch",
-       y = "Total number of Individuals (log scale)") +
-  theme1
-
-dev.off()
-
-# Interestingly in mesocosm with more surviving perch, individuals seemed to
-# be eating a higher number of animals
-
-
-# Check that total individuals is a good measure of gut fullness ----
-
-gutmod1 <-
-  lm(log(gi.weight) ~ log(total.animals + 1), data = perch_diet)
-
-plot(resid(gutmod1) ~ fitted(gutmod1), data = perch_diet)
-abline(0, 0)
-
-gutmodresid <- simulateResiduals(gutmod1)
-plot(gutmodresid)  # looks good
-
-summary(gutmod1)
-# total indv. is a decent predictor of GI weight (R2 = 0.35)
-
-gutpred <- predict(gutmod1, se.fit = TRUE)
-
-gutpred$lower <- with(gutpred, fit - se.fit)
-gutpred$upper <- with(gutpred, fit + se.fit)
-
-
-## Plot model predictions ----
-
-png(
-  "Fullness Plot.png",
-  width = 9,
-  height = 8,
-  units = "cm",
-  res = 500
-)
-
-ggplot(data = perch_diet) +
-  geom_point(aes(x = total.animals,
-                 y = gi.weight)) +
-  geom_ribbon(
-    aes(
-      x = total.animals,
-      ymin = exp(gutpred$lower),
-      ymax = exp(gutpred$upper)
-    ),
-    fill = "aquamarine",
-    alpha = 0.3
-  ) +
-  geom_line(aes(x = total.animals,
-                y = exp(gutpred$fit)),
-            size = 0.5,
-            linetype = "dashed") +
-  scale_x_continuous(trans = "log1p",
-                     breaks = c(0, 1, 10, 100, 1000)) +
-  labs(x = "Total Number of Individuals (log scale)",
-       y = "Gastrointestinal Tract Weight (g)") +
-  theme1
 
 dev.off()
 
@@ -412,7 +273,7 @@ dietnMDS
 dietnMDS$stress
 
 # Shepards test/goodness of fit
-stressplot(dietnMDS)
+stressplot(dietnMDS)  # looks pretty good
 
 gof <- goodness(dietnMDS)
 plot(dietnMDS, type = "t")
@@ -482,10 +343,10 @@ levels(diet_nmds_hulls$label) <-
 
 png(
   "Perch nMDS.png",
-  width = 8,
-  height = 8,
+  width = 8.84,
+  height = 9,
   units = "cm",
-  res = 500
+  res = 300
 )
 
 ggplot() +
@@ -550,16 +411,21 @@ ggplot() +
     size = 7 / .pt,
     colour =  "blue3"
   ) +
-  scale_fill_viridis_d(name = "Corral",
+  scale_fill_viridis_d(name = expression(paste("Exposure Concentration (MPs" ~
+                                                 L ^ -1 * ")")),
                        option = "inferno",
                        direction = -1) +
-  scale_colour_viridis_d(name = "Corral",
+  scale_colour_viridis_d(name = expression(paste("Exposure Concentration (MPs" ~
+                                                   L ^ -1 * ")")),
                          option = "inferno",
                          direction = -1) +
   scale_x_continuous(limits = c(-2, 2)) +
   scale_y_continuous(limits = c(-2, 1)) +
   theme1 +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom",
+        legend.direction = "vertical") +
+  guides(colour = guide_legend(nrow = 2),
+         fill = guide_legend(nrow = 2))
 
 dev.off()
 
@@ -577,39 +443,3 @@ diet_PERMANOVA <-
   )
 
 diet_PERMANOVA
-
-# Summarize diet by corral
-
-diet_summary <-
-  perch_diet_long %>%
-  group_by(corral, taxa) %>%
-  summarize(mean = mean(count)) %>%
-  ungroup() %>%
-  pivot_wider(values_from = mean,
-              names_from = taxa)
-
-# Look at biometric effects on Copepod ingestion ----
-
-perch_diet$stdate <-
-  as.numeric(as.Date(perch_diet$collection.date,
-                     format = "%d-%m-%y")) -
-  min(as.numeric(as.Date(perch_diet$collection.date,
-                         format = "%d-%m-%y")))
-
-copepodmod1 <-
-  glmmTMB(
-    cyclopoida ~
-      body.length +
-      log(MPconcentration + 6) +
-      (1 | corral),
-    family = nbinom1(link = "log"),
-    data = perch_diet
-  )
-
-plot(simulateResiduals(copepodmod1))
-
-plotResiduals(copepodmod1, perch_diet$stdate)
-
-summary(copepodmod1)
-
-## Basically can't get a well-fitting model from the data

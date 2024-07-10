@@ -138,7 +138,7 @@ png(
   width = 8.84,
   height = 5,
   units = "cm",
-  res = 500
+  res = 300
 )
 
 ggplot() +
@@ -180,8 +180,7 @@ summary(ARA.prop.mod1)  # no effect of MP concentration
 
 #### Pull out FA data and covariates ----
 
-# Remove any FAs that contribute less than 1% and re-scale response so it
-# sums to 1
+# Remove any FAs that contribute less than 1%
 
 trimmed_perch_FA <-
   data.frame(perch_FA_prop2[, c(7:16, 18:25, 27:34, 36:44)] %>%
@@ -434,7 +433,6 @@ plot_grid(
 
 dev.off()
 
-
 #### Dive in factors driving variation ----
 
 trimmed_perch_FA3 <-
@@ -509,10 +507,10 @@ perch_FA_prop_cca_bp3$label <- "Gonad Weight"
 
 png(
   "Perch FA Proportions CCA Reduced.png",
-  width = 8.84,
-  height = 7.8,
+  width = 18,
+  height = 9,
   units = "cm",
-  res = 600
+  res = 300
 )
 
 ggplot() +
@@ -588,74 +586,6 @@ plot(perch_FA_prop_cca,
      display = c("sp", "cn"))
 
 summary(perch_FA_prop_cca)
-
-
-### Explore individual patterns ----
-
-#### Pairwise correlations ----
-
-pairs(trimmed_perch_FA)
-
-#### Look at short- vs. long-chain PUFAs ----
-
-trimmed_perch_FA2 <-
-  cbind(trimmed_perch_FA, perch_FA_prop_covariates)
-
-trimmed_perch_FA2_long <-
-  pivot_longer(trimmed_perch_FA2,
-               cols = c(1:14),
-               names_to = "FA")
-
-trimmed_perch_FA2_long$FA <- as.factor(trimmed_perch_FA2_long$FA)
-
-levels(trimmed_perch_FA2_long$FA)
-
-reduced_perch_FA2_long <-
-  trimmed_perch_FA2_long %>%
-  filter(
-    FA == "C_18.1n.9" |
-      FA == "C_18.2n.6" |
-      FA == "C_18.3n.3" |
-      FA == "C_18.4n.3" |
-      FA == "C_20.4n.6" |
-      FA == "C_22.5n.6" |
-      FA == "C_22.6n.3"
-  )
-
-ggplot(reduced_perch_FA2_long) +
-  geom_point(aes(x = body.weight,
-                 y = value,
-                 colour = FA)) +
-  geom_smooth(aes(x = body.weight,
-                  y = value,
-                  colour = FA),
-              method = "lm") +
-  facet_grid(sex ~ FA, scale = "free") +
-  theme1
-
-ggplot(reduced_perch_FA2_long) +
-  geom_point(aes(x = gonad.weight,
-                 y = value,
-                 colour = FA)) +
-  geom_smooth(aes(x = gonad.weight,
-                  y = value,
-                  colour = FA),
-              method = "lm") +
-  facet_grid(sex ~ FA, scale = "free") +
-  theme1
-
-ggplot(reduced_perch_FA2_long) +
-  geom_point(aes(x = liver.weight,
-                 y = value,
-                 colour = FA)) +
-  geom_smooth(aes(x = liver.weight,
-                  y = value,
-                  colour = FA),
-              method = "lm") +
-  facet_wrap( ~ FA, scale = "free") +
-  theme1
-
-# Hard to figure out what's going on here
 
 ### Plot individual fatty acids ----
 
@@ -763,15 +693,16 @@ png(
   width = 8.84,
   height = 8,
   units = "cm",
-  res = 500
+  res = 300
 )
 
 ggplot(zoop.end.long) +
   geom_point(aes(x = MPconcentration,
                    y = value,
                    fill = FA),
-               alpha = 0.6,
-             shape = 21) +
+               alpha = 0.8,
+             shape = 21,
+             size = 1.5) +
   facet_wrap(~timepoint,
              nrow = 2) +
   scale_fill_viridis_d(
@@ -1018,8 +949,8 @@ zoopFAplot1 <-
   geom_text(
     data = zoop_FA_prop_cca_bp1,
     aes(
-      x =  CCA1 * 1.4,
-      y = CCA2 * 1.4,
+      x =  CCA1 * 1.5,
+      y = CCA2 * 1.5,
       label = label
     ),
     size = 8 / .pt,
@@ -1171,8 +1102,8 @@ zoopFAplot2 <-
   geom_text(
     data = zoop_FA_prop_cca_bp2,
     aes(
-      x =  CCA1 * 1.4,
-      y = CCA2 * 1.4,
+      x =  CCA1 * 1.5,
+      y = CCA2 * 1.5,
       label = label
     ),
     size = 8 / .pt,
@@ -1225,9 +1156,9 @@ zoopFAplot2 <-
 png(
   "Zooplankton FA Proportions CCA.png",
   width = 18.2,
-  height = 15,
+  height = 19,
   units = "cm",
-  res = 600
+  res = 300
 )
 
 plot_grid(
@@ -1262,16 +1193,17 @@ levels(food_FA_prop_long$FA) <-
 
 png(
   "Fish Food FAs Proportionss Plot.png",
-  width = 8.84,
-  height = 4,
+  width = 18,
+  height = 6,
   units = "cm",
-  res = 600
+  res = 300
 )
 
 ggplot(food_FA_prop_long) +
   geom_col(aes(x = ID,
                y = value,
-               fill = FA)) +
+               fill = FA),
+           colour = "black") +
   scale_fill_viridis_d(option = "turbo",
                        name = "") +
   labs(x = "Sample",
@@ -1304,7 +1236,7 @@ png(
   width = 18,
   height = 8.84,
   units = "cm",
-  res = 600
+  res = 300
 )
 
 ggplot(perch_FA_prop_long) +
@@ -1354,7 +1286,7 @@ png(
   width = 18,
   height = 12,
   units = "cm",
-  res = 600
+  res = 300
 )
 
 ggplot(zoop_FA_prop_long) +
@@ -1380,3 +1312,4 @@ ggplot(zoop_FA_prop_long) +
                                    hjust = 1))
 
 dev.off()
+

@@ -8,7 +8,7 @@ library(dplyr)  # for data wrangling
 library(glmmTMB)  # for LMs
 library(DHARMa)  # for assessing LMs
 library(emmeans)  # for interpreting LMs
-library(ggeffects)  # intaerpreting LMs
+library(ggeffects)  # interpreting LMs
 
 # Set a universal ggplot theme to use for all plots
 
@@ -30,7 +30,6 @@ theme1 <-
 # Load perch biometrics and stocking/mortality data ----
 
 biometrics <- read.csv("perch_biometrics.csv",
-                       # biometrics
                        header = TRUE,
                        stringsAsFactors = TRUE)
 
@@ -39,8 +38,9 @@ pop <- read.csv("fish_pop.csv",
                 header = TRUE,
                 stringsAsFactors = TRUE)
 
+# combine the data by mesocosm ID
 perch2021 <-
-  left_join(biometrics,  # combine the data by mesocosm ID
+  left_join(biometrics,  
             pop, by = "corral")
 
 # Remove those without data (mostly non-perch fish that got into the mesocosms)
@@ -62,110 +62,11 @@ perch2021 %>%
 
 # Compare body weight (growth) with MP concentration ----
 
-## As an ANOVA ----
-
-fish2021.mod1 <-
-  aov(body.weight ~ corral,
-      data = perch2021)
-
-summary(fish2021.mod1)
-
-plot(residuals(fish2021.mod1) ~ fitted(fish2021.mod1))
-abline(0, 0)
-
-# Corral is sig (p<0.001)
-
-TukeyHSD(fish2021.mod1)  # Differences in H-B, H-D, H-I
-
-# Predict from the model
-
-fish2021.pred <-
-  data.frame(corral = levels(perch2021$corral))
-
-fish2021.pred$fit <- predict(fish2021.mod1,
-                             newdata = fish2021.pred,
-                             re.form = NA)
-
-fish2021.pred <- left_join(fish2021.pred,
-                           pop,
-                           by = "corral")
-
-# Define treatment names
-
-perch2021$treatment <-
-  perch2021$MPconcentration
-
-perch2021$treatment[perch2021$treatment == "0"] <-
-  with(perch2021[perch2021$treatment == "0", ],
-       ifelse(corral == "B",
-              "0 (1)",
-              "0 (2)"))
-
-perch2021$treatment <- as.factor(perch2021$treatment)
-
-# Make data frame for letters according to significant differences
-
-fish2021.labs <-
-  perch2021 %>%
-  group_by(corral, MPconcentration, treatment) %>%
-  summarize(y = max(na.omit(body.weight)))
-
-fish2021.labs$lab <-
-  c("a", "ab", "a", "ab", "ab", "ab", "b", "a")
-
-# Plot the ANOVA results
-
-png(
-  "2021 Perch Weights.png",
-  width = 8.84,
-  height = 6,
-  units = "cm",
-  res = 600
-)
-
-ggplot(perch2021) +
-  geom_boxplot(aes(
-    x = MPconcentration,
-    y = body.weight,
-    fill = reorder(treatment,
-                   MPconcentration,
-                   mean)
-  ),
-  alpha = 0.75) +
-  geom_text(
-    data = fish2021.labs,
-    aes(
-      x = MPconcentration,
-      y = y + 0.5,
-      label = lab,
-      group = reorder(treatment,
-                      MPconcentration,
-                      mean)
-    ),
-    size = 10 / .pt,
-    position = position_dodge(width = 1)
-  ) +
-  labs(x = expression(paste(
-    "MP Exposure Concentration (particles" ~ L ^ -1 * ")"
-  )),
-  y = "Body Weight (g)") +
-  scale_fill_viridis_d(option = "plasma",
-                       name = "Treatment",
-                       direction = -1) +
-  scale_x_continuous(trans = "log1p",
-                     breaks = sort(unique(perch2021$MPconcentration))) +
-  theme1 +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1))
-
-dev.off()
-
-## As a regression ----
-
 fish2021.mod1 <-
   glmmTMB(body.weight ~ log(MPconcentration + 6) + (1 | corral),
           data = perch2021)
 
-plot(simulateResiduals(fish2021.mod2))  # issues with the residuals
+plot(simulateResiduals(fish2021.mod1))  # issues with the residuals
 
 plotResiduals(fish2021.mod1, perch2021$corral)
 plotResiduals(fish2021.mod1, perch2021$YP.end)
@@ -196,16 +97,28 @@ ggemmeans(fish2021.mod2,
 perch.body.predict$YP.end <- as.character(perch.body.predict$YP.end)
 perch.body.predict$YP.end <- as.numeric(perch.body.predict$YP.end)
 
-### Make the body weight figure for the paper ----
+## Make the body weight figure for the paper ----
+
+perch2021$treatment <- as.factor(perch2021$corral)
+
+levels(perch2021$treatment) <-
+  c(c("0(1)",
+      "414",
+      "29,240",
+      "100",
+      "6",
+      "7,071",
+      "0(2)",
+      "1,710"))
 
 set.seed(5465)
 
-png(
-  "2021 Perch Weights 2.png",
+tiff(
+  "2021 Perch Weights.tiff",
   width = 8.84,
-  height = 9.5,
+  height = 9,
   units = "cm",
-  res = 600
+  res = 300
 )
 
 ggplot(perch2021) +
@@ -221,7 +134,9 @@ ggplot(perch2021) +
     aes(
       x = YP.end,
       y = body.weight,
-      fill = as.factor(MPconcentration)
+      fill = reorder(treatment,
+                     MPconcentration,
+                     mean)
     ),
     shape = 21,
     alpha = 0.75,
@@ -232,10 +147,8 @@ ggplot(perch2021) +
                      expand = c(0, 0)) +
   scale_fill_viridis_d(option = "inferno",
                        direction = -1,
-                       name =
-                         expression(
-                           paste("Microplastic exposure concentration (particles" ~ L ^ -1 * ")")
-                         )) +
+                       name = expression(paste("Exposure Concentration (MPs" ~
+                                                 L ^ -1 * ")"))) +
   labs(x = "Number of Surviving Yellow Perch",
        y = "Final Body Weight (g)") +
   theme1 +
@@ -327,3 +240,7 @@ summary(fish2021.mod2)
 
 plot(residuals(fish2021.mod1) ~ fitted(fish2021.mod1))
 abline(0, 0)
+
+# Export data for the diet script ----
+
+write.csv(perch2021, "perch2021.csv")

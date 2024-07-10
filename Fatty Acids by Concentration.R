@@ -240,7 +240,7 @@ perchEPA_pred <-
 
 png(
   "Perch EPA Plot.png",
-  width = 8.84,
+  width = 8.4,
   height = 5,
   units = "cm",
   res = 500
@@ -292,7 +292,7 @@ png(
   width = 8.84,
   height = 5,
   units = "cm",
-  res = 500
+  res = 300
 )
 
 ggplot(perch_FA2) +
@@ -311,10 +311,10 @@ ggplot(perch_FA2) +
              size = 1) +
   scale_x_continuous(trans = "log1p",
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
-  labs(x = expression(paste(
-    "MP exposure concentration (particles" ~ L ^ -1 * ")"
-  )),
-  y = expression(paste("DHA Concentration (mg " ~ g ^ -1 * ")"))) +
+  labs(x = expression(paste("Exposure Concentration (MPs" ~
+                              L ^ -1 * ")")),
+  y = expression(paste("Exposure Concentration (MPs" ~
+                         L ^ -1 * ")"))) +
   theme1
 
 dev.off()
@@ -399,20 +399,20 @@ summary(perchLAmod1)
 # weak negative correlation with gonad weight
 
 perchLA_pred <-
-  ggemmeans(perchLINmod1,
+  ggemmeans(perchLAmod1,
             terms = c("gonad.weight")) %>%
   rename(gonad.weight = x)
 
 LAplot <-
   ggplot(perch_FA2sex) +
   geom_ribbon(
-    data = perchLIN_pred,
+    data = perchLA_pred,
     aes(x = gonad.weight,
         ymin = conf.low,
         ymax = conf.high),
     alpha = 0.3
   ) +
-  geom_line(data = perchLIN_pred,
+  geom_line(data = perchLA_pred,
             aes(x = gonad.weight,
                 y = predicted)) +
   geom_point(aes(x = gonad.weight,
@@ -433,7 +433,7 @@ png(
   width = 18,
   height = 6,
   units = "cm",
-  res = 500
+  res = 300
 )
 
 plot_grid(
@@ -472,7 +472,7 @@ png(
   width = 8.84,
   height = 5,
   units = "cm",
-  res = 500
+  res = 300
 )
 
 ggplot(perch_FA2sex) +
@@ -745,3 +745,4 @@ ggplot(food_FA) +
   )
 
 dev.off()
+
