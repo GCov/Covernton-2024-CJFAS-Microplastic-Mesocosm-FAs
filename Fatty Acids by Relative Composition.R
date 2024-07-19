@@ -595,7 +595,7 @@ levels(trimmed_perch_FA2_long$FA) <-
 png(
   "Perch Relative FA.png",
   width = 18,
-  height = 7.8,
+  height = 10,
   units = "cm",
   res = 300
 )
@@ -603,7 +603,9 @@ png(
 ggplot(trimmed_perch_FA2_long) +
   geom_col(aes(x = ID,
                y = value,
-               fill = FA)) +
+               fill = FA),
+           colour = "black",
+           linewidth = 0.28) +
   facet_grid(~MPconcentration, 
              scales = "free_x", 
              space = "free") +
@@ -1242,7 +1244,8 @@ png(
 ggplot(perch_FA_prop_long) +
   geom_col(aes(x = ID,
                y = value,
-               fill = FA)) +
+               fill = FA),
+           colour = "black") +
   scale_fill_viridis_d(option = "turbo",
                        name = "") +
   labs(x = "Sample",
@@ -1277,9 +1280,9 @@ zoop_FA_prop_long$timepoint <-
   as.factor(zoop_FA_prop_long$date)
 
 levels(zoop_FA_prop_long$timepoint) <-
-  c("Start",
-    "Mid-point",
-    "End")
+  c("Day -6",
+    "Day 34",
+    "Day 68")
 
 png(
   "Zooplankton FAs Proportionss Plot.png",
@@ -1300,7 +1303,7 @@ ggplot(zoop_FA_prop_long) +
   scale_fill_viridis_d(option = "turbo",
                        name = "") +
   scale_colour_viridis_d(name = "Time Point",
-                         option = "plasma") +
+                         option = "inferno") +
   labs(x = "Sample",
        y = "Proportion") +
   scale_y_continuous(expand = c(0, 0),

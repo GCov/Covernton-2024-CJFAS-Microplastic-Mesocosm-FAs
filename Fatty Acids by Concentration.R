@@ -682,7 +682,9 @@ png(
 ggplot(zoop_FA_long) +
   geom_col(aes(x = corral,
                y = value,
-               fill = FA)) +
+               fill = FA),
+           colour = "black",
+           linewidth = 0.28) +
   facet_grid(time~MPconcentration, 
              scales = "free_x", 
              space = "free") +
