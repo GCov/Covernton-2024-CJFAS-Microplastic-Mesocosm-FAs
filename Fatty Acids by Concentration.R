@@ -239,7 +239,7 @@ perchEPA_pred <-
   rename(body.weight = x)
 
 png(
-  "Perch EPA Plot.png",
+  "Perch EPA Plot.tiff",
   width = 8.4,
   height = 5,
   units = "cm",
@@ -288,7 +288,7 @@ perchDHA_pred <-
   rename(MPconcentration = x)
 
 png(
-  "Perch DHA Plot.png",
+  "Perch DHA Plot.tiff",
   width = 8.84,
   height = 5,
   units = "cm",
@@ -429,7 +429,7 @@ LAplot <-
 #### ALA and LA plot ----
 
 png(
-  "Perch ALA and LA Plot.png",
+  "Perch ALA and LA Plot.tiff",
   width = 18,
   height = 6,
   units = "cm",
@@ -468,7 +468,7 @@ perchDHA_pred2 <-
   rename(body.weight = x)
 
 png(
-  "Perch DHA Plot 2.png",
+  "Perch DHA Plot 2.tiff",
   width = 8.84,
   height = 5,
   units = "cm",
@@ -601,7 +601,7 @@ levels(zoop_FA_long$timepoint) <-
     "Day 68")
 
 png(
-  "Zooplankton Absolute Composition Plot.png",
+  "Zooplankton Absolute Composition Plot.tiff",
   width = 18,
   height = 12,
   units = "cm",
@@ -672,7 +672,7 @@ zoop_FA_long$FA <- as.factor(zoop_FA_long$FA)
 levels(zoop_FA_long$FA) <- zoop_FA_names
 
 png(
-  "Zoop Individual FAs.png",
+  "Zoop Individual FAs.tiff",
   width = 18,
   height = 18,
   units = "cm",
@@ -704,7 +704,7 @@ dev.off()
 # Fish food ----
 
 png(
-  "Fish Food Essential FAs Concentrations Plot.png",
+  "Fish Food Essential FAs Concentrations Plot.tiff",
   width = 9,
   height = 9,
   units = "cm",

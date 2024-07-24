@@ -130,7 +130,7 @@ levels(perch_diet_long$treatment) <-
 ## Plot by taxa ----
 
 png(
-  "Perch Diet Plot by Taxa.png",
+  "Perch Diet Plot by Taxa.tiff",
   width = 18,
   height = 8,
   units = "cm",
@@ -204,7 +204,7 @@ levels(perch_relabund_long$treatment) <-
   c("0(1)", "414", "29,240", "100", "6", "7,071", "0(2)", "1,710")
 
 png(
-  "Perch Diet Plot by Taxa Relative Abundance.png",
+  "Perch Diet Plot by Taxa Relative Abundance.tiff",
   width = 18,
   height = 8,
   units = "cm",
@@ -342,7 +342,7 @@ levels(diet_nmds_hulls$label) <-
 ### Plot ----
 
 png(
-  "Perch nMDS.png",
+  "Perch nMDS.tiff",
   width = 8.84,
   height = 9,
   units = "cm",

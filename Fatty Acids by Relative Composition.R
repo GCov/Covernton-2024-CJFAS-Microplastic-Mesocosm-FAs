@@ -134,7 +134,7 @@ EPA.prop.pred <-
   rename(body.weight = x)
 
 png(
-  "Perch Compositional EPA Plot.png",
+  "Perch Compositional EPA Plot.tiff",
   width = 8.84,
   height = 5,
   units = "cm",
@@ -414,7 +414,7 @@ perchccaplot2 <-
 #### Combine plots ----
 
 png(
-  "Perch FA Proportions CCA.png",
+  "Perch FA Proportions CCA.tiff",
   width = 18,
   height = 10,
   units = "cm",
@@ -506,7 +506,7 @@ perch_FA_prop_cca_bp3$label <- "Gonad Weight"
 ##### Plot ----
 
 png(
-  "Perch FA Proportions CCA Reduced.png",
+  "Perch FA Proportions CCA Reduced.tiff",
   width = 18,
   height = 9,
   units = "cm",
@@ -593,7 +593,7 @@ levels(trimmed_perch_FA2_long$FA) <-
   trimmed.FA.names
 
 png(
-  "Perch Relative FA.png",
+  "Perch Relative FA.tiff",
   width = 18,
   height = 10,
   units = "cm",
@@ -691,7 +691,7 @@ zoop.end.long$timepoint <-
                 `2021-08-09` = "Day 68")
 
 png(
-  "Zoop Compositional HUFA Plot.png",
+  "Zoop Compositional HUFA Plot.tiff",
   width = 8.84,
   height = 8,
   units = "cm",
@@ -1156,7 +1156,7 @@ zoopFAplot2 <-
 #### Combine plot ----
 
 png(
-  "Zooplankton FA Proportions CCA.png",
+  "Zooplankton FA Proportions CCA.tiff",
   width = 18.2,
   height = 19,
   units = "cm",
@@ -1194,7 +1194,7 @@ levels(food_FA_prop_long$FA) <-
     "SFA")
 
 png(
-  "Fish Food FAs Proportionss Plot.png",
+  "Fish Food FAs Proportionss Plot.tiff",
   width = 18,
   height = 6,
   units = "cm",
@@ -1234,7 +1234,7 @@ levels(perch_FA_prop_long$FA) <-
     "SFA")
 
 png(
-  "Perch FAs Proportionss Plot.png",
+  "Perch FAs Proportionss Plot.tiff",
   width = 18,
   height = 8.84,
   units = "cm",
@@ -1285,7 +1285,7 @@ levels(zoop_FA_prop_long$timepoint) <-
     "Day 68")
 
 png(
-  "Zooplankton FAs Proportionss Plot.png",
+  "Zooplankton FAs Proportionss Plot.tiff",
   width = 18,
   height = 12,
   units = "cm",
