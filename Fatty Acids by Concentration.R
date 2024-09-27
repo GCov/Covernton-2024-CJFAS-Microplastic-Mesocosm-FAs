@@ -313,8 +313,7 @@ ggplot(perch_FA2) +
                      breaks = c(0, 1, 10, 100, 1000, 10000)) +
   labs(x = expression(paste("Exposure Concentration (MPs" ~
                               L ^ -1 * ")")),
-  y = expression(paste("Exposure Concentration (MPs" ~
-                         L ^ -1 * ")"))) +
+  y = expression(paste("DHA Concentration (mg " ~ g ^ -1 * ")"))) +
   theme1
 
 dev.off()
